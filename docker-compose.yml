@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  api:
+    build: .
+    ports:
+      - "5123:5123"
+    command: bash -c "go get github.com/pilu/fresh && fresh"
+    volumes:
+      - .:/go/src/github.com/onestay/MarathonTools-API
+  mongo:
+    image: mongo
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+volumes:
+  mongo-data:
