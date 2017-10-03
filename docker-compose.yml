@@ -4,8 +4,8 @@ services:
   api:
     build: .
     ports:
-      - "5123:5123"
-    command: bash -c "go get github.com/pilu/fresh && fresh"
+      - "3000:3000"
+    command: bash -c "go get github.com/codegangsta/gin && gin -i"
     volumes:
       - .:/go/src/github.com/onestay/MarathonTools-API
   mongo:
