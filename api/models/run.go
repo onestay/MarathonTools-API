@@ -18,7 +18,7 @@ type gameInfo struct {
 }
 
 type runInfo struct {
-	Estimate int    `json:"estimate" bson:"estimate"`
+	Estimate string `json:"estimate" bson:"estimate"`
 	Category string `json:"category" bson:"category"`
 	Platform string `json:"platform" bso:"platform"`
 }
@@ -27,6 +27,6 @@ type playerInfo struct {
 	DisplayName string `json:"displayName" bson:"displayName"`
 	Country     string `json:"country" bson:"country"`
 	TwitterName string `json:"twitterName" bson:"twitterName"`
-	TwitchName  string `json:"twitchName bson:"twitchName"`
+	TwitchName  string `json:"twitchName" bson:"twitchName"`
 	YoutubeName string `json:"youtubeName" bson:"youtubeName"`
 }

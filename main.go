@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/onestay/MarathonTools-API/api/common"
 	"github.com/onestay/MarathonTools-API/api/models"
+	"github.com/onestay/MarathonTools-API/api/routes/runs"
 	"github.com/onestay/MarathonTools-API/ws"
 	"gopkg.in/mgo.v2"
 )
@@ -21,36 +22,45 @@ func init() {
 }
 
 func main() {
-	log.SetFlags(log.LstdFlags)
 	startHTTPServer()
-	ensureMarathon()
+	/* if os.Getenv("jsonruns") == "true" {
+		runs := []models.Run{}
+		runFile, err := os.Open("./config/runs.json")
+		if err != nil {
+			panic("jsonruns set to true but no run file provided")
+		}
+
+		json.NewDecoder(runFile).Decode(&runs)
+
+		for _, run := range runs {
+			run.RunID = bson.NewObjectId()
+			fmt.Println(run)
+			err := mgs.DB("marathon").C("runs").Insert(run)
+			if err != nil {
+				panic("error adding run from json into db")
+			}
+		}
+		os.Rename("./config/runs.json", "./config/runs_imported.json")
+	} */
 }
 
 func startHTTPServer() {
 	r := httprouter.New()
 	hub := ws.NewHub()
-	// baseController := common.NewController(hub)
-	// rc := runs.NewRunController(baseController)
+	baseController := common.NewController(hub, mgs)
+	rc := runs.NewRunController(baseController)
 	go hub.Run()
 
 	r.GET("/ws", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		ws.ServeWs(hub, w, r)
 	})
-	log.Println("server running on :5123")
-	log.Fatal(http.ListenAndServe(":5123", r))
 
-}
-
-func ensureMarathon() bool {
-	names, err := mgs.DatabaseNames()
-	if err != nil {
-		panic(err)
-	}
-	log.Println("Hi")
-	for _, n := range names {
-		fmt.Println(n)
-	}
-	return true
+	r.POST("/run/add/single", rc.AddRun)
+	r.GET("/run/get/all", rc.GetRuns)
+	r.GET("/run/get/single/:id", rc.GetRun)
+	r.DELETE("/run/delete/:id", rc.DeleteRun)
+	log.Println("server running on :3001")
+	log.Fatal(http.ListenAndServe(":3001", r))
 }
 
 func getSession() *mgo.Session {
