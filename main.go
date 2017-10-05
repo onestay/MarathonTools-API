@@ -59,6 +59,8 @@ func startHTTPServer() {
 	r.GET("/run/get/all", rc.GetRuns)
 	r.GET("/run/get/single/:id", rc.GetRun)
 	r.DELETE("/run/delete/:id", rc.DeleteRun)
+	r.PATCH("/run/update/:id", rc.UpdateRun)
+	
 	log.Println("server running on :3001")
 	log.Fatal(http.ListenAndServe(":3001", r))
 }

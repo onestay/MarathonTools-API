@@ -3,6 +3,7 @@ package runs
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/onestay/MarathonTools-API/api/models"
@@ -33,11 +34,11 @@ func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprou
 
 	err := rc.base.MGS.DB("marathon").C("runs").Insert(run)
 	if err != nil {
-		rc.base.Response("", "err adding run", 500, w)
+		rc.base.Response("", "err adding run", http.StatusInternalServerError, w)
 		return
 	}
 
-	w.WriteHeader(204)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // GetRuns will return all runs from the mgo collection
@@ -46,7 +47,7 @@ func (rc RunController) GetRuns(w http.ResponseWriter, r *http.Request, _ httpro
 
 	err := rc.base.MGS.DB("marathon").C("runs").Find(nil).All(&runs)
 	if err != nil {
-		rc.base.Response("", err.Error(), 500, w)
+		rc.base.Response("", err.Error(), http.StatusInternalServerError, w)
 		fmt.Println(err)
 		return
 	}
@@ -59,7 +60,7 @@ func (rc RunController) GetRuns(w http.ResponseWriter, r *http.Request, _ httpro
 func (rc RunController) GetRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	if !bson.IsObjectIdHex(runID) {
-		rc.base.Response("", "invalid bson id", 400, w)
+		rc.base.Response("", "invalid bson id", http.StatusBadRequest, w)
 		return
 	}
 
@@ -67,10 +68,10 @@ func (rc RunController) GetRun(w http.ResponseWriter, r *http.Request, ps httpro
 	err := rc.base.MGS.DB("marathon").C("runs").FindId(bson.ObjectIdHex(runID)).One(&run)
 
 	if s := err.Error(); s == "not found" {
-		rc.base.Response("", err.Error(), 404, w)
+		rc.base.Response("", err.Error(), http.StatusNotFound, w)
 		return
 	} else if err != nil {
-		rc.base.Response("", err.Error(), 500, w)
+		rc.base.Response("", err.Error(), http.StatusInternalServerError, w)
 		return
 	}
 
@@ -82,16 +83,42 @@ func (rc RunController) GetRun(w http.ResponseWriter, r *http.Request, ps httpro
 func (rc RunController) DeleteRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	if !bson.IsObjectIdHex(runID) {
-		rc.base.Response("", "invalid bson id", 400, w)
+		rc.base.Response("", "invalid bson id", http.StatusBadRequest, w)
 		return
 	}
 
 	err := rc.base.MGS.DB("marathon").C("runs").RemoveId(bson.ObjectIdHex(runID))
 	if err != nil {
 		fmt.Println(err)
-		rc.base.Response("", err.Error(), 404, w)
+		rc.base.Response("", err.Error(), http.StatusNotFound, w)
 		return
 	}
 
-	w.WriteHeader(204)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	runID := ps.ByName("id")
+	if !bson.IsObjectIdHex(runID) {
+		rc.base.Response("", "invalid bson id", http.StatusBadRequest, w)
+		return
+	}
+
+	updatedRun := models.Run{}
+
+	err := json.NewDecoder(r.Body).Decode(&updatedRun)
+	if err != nil {
+		rc.base.Response("", "couldn't unmarshal body", http.StatusInternalServerError, w)
+		log.Printf("Error in UpdateRun: %v", err)
+		return
+	}
+	updatedRun.RunID = bson.ObjectIdHex(runID)
+
+	err = rc.base.MGS.DB("marathon").C("runs").UpdateId(bson.ObjectIdHex(runID), updatedRun)
+	if err != nil {
+		rc.base.Response("", err.Error(), http.StatusInternalServerError, w)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
