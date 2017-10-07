@@ -80,6 +80,7 @@ func (rc RunController) GetRun(w http.ResponseWriter, r *http.Request, ps httpro
 	json.NewEncoder(w).Encode(run)
 }
 
+// DeleteRun will delete a run with the provided id
 func (rc RunController) DeleteRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	if !bson.IsObjectIdHex(runID) {
@@ -97,6 +98,7 @@ func (rc RunController) DeleteRun(w http.ResponseWriter, r *http.Request, ps htt
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateRun will update the run with the id provided and the request body
 func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	if !bson.IsObjectIdHex(runID) {
@@ -121,4 +123,60 @@ func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps htt
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// MoveRun takes the run by id and moves it after the run provided by after
+// to do this we have to pull every run from the collection, than delete every run in the db
+// do the moving and insert all the records into the db again
+func (rc RunController) MoveRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	runID := ps.ByName("id")
+	after := ps.ByName("after")
+	if !bson.IsObjectIdHex(runID) || !bson.IsObjectIdHex(after) {
+		rc.base.Response("", "invalid bson id", http.StatusBadRequest, w)
+		return
+	}
+
+	runs := []models.Run{}
+
+	err := rc.base.MGS.DB("marathon").C("runs").Find(nil).All(&runs)
+	if err != nil {
+		rc.base.Response("", err.Error(), http.StatusInternalServerError, w)
+		fmt.Println(err)
+		return
+	}
+
+	var index int
+	var indexToInsert int
+
+	for i := 0; i < len(runs); i++ {
+		if runs[i].RunID == bson.ObjectIdHex(runID) {
+			index = i
+		} else if runs[i].RunID == bson.ObjectIdHex(after) {
+			indexToInsert = i
+		}
+	}
+
+	q := runs[index]
+	b := append(runs[:index], runs[index+1:]...)
+	runs = append(b[:indexToInsert], append([]models.Run{q}, b[indexToInsert:]...)...)
+
+	rc.base.MGS.DB("marathon").C("runs").RemoveAll(nil)
+
+	for i := 0; i < len(runs); i++ {
+		rc.base.MGS.DB("marathon").C("runs").Insert(runs[i])
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (rc RunController) ActiveRuns(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	runs := make([]models.Run, 3)
+
+	runs[0] = *rc.base.PrevRun
+	runs[1] = *rc.base.CurrentRun
+	runs[2] = *rc.base.NextRun
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(&runs)
 }

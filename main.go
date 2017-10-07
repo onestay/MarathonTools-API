@@ -47,7 +47,7 @@ func main() {
 func startHTTPServer() {
 	r := httprouter.New()
 	hub := ws.NewHub()
-	baseController := common.NewController(hub, mgs)
+	baseController := common.NewController(hub, mgs, 0)
 	rc := runs.NewRunController(baseController)
 	go hub.Run()
 
@@ -55,12 +55,14 @@ func startHTTPServer() {
 		ws.ServeWs(hub, w, r)
 	})
 
-	r.POST("/run/add/single", rc.AddRun)
 	r.GET("/run/get/all", rc.GetRuns)
 	r.GET("/run/get/single/:id", rc.GetRun)
+	r.GET("/run/get/active", rc.ActiveRuns)
 	r.DELETE("/run/delete/:id", rc.DeleteRun)
 	r.PATCH("/run/update/:id", rc.UpdateRun)
-	
+	r.POST("/run/move/:id/:after", rc.MoveRun)
+	r.POST("/run/add/single", rc.AddRun)
+
 	log.Println("server running on :3001")
 	log.Fatal(http.ListenAndServe(":3001", r))
 }
