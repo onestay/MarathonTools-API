@@ -52,16 +52,21 @@ func startHTTPServer() {
 	go hub.Run()
 
 	r.GET("/ws", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		ws.ServeWs(hub, w, r)
+		ws.ServeWs(hub, w, r, baseController.SendInitialData())
 	})
 
+	// routes for run endpoint
 	r.GET("/run/get/all", rc.GetRuns)
 	r.GET("/run/get/single/:id", rc.GetRun)
 	r.GET("/run/get/active", rc.ActiveRuns)
+
 	r.DELETE("/run/delete/:id", rc.DeleteRun)
+
 	r.PATCH("/run/update/:id", rc.UpdateRun)
+
 	r.POST("/run/move/:id/:after", rc.MoveRun)
 	r.POST("/run/add/single", rc.AddRun)
+	r.POST("/run/switch", rc.SwitchRun)
 
 	log.Println("server running on :3001")
 	log.Fatal(http.ListenAndServe(":3001", r))

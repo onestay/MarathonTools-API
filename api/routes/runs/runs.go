@@ -80,6 +80,18 @@ func (rc RunController) GetRun(w http.ResponseWriter, r *http.Request, ps httpro
 	json.NewEncoder(w).Encode(run)
 }
 
+func (rc RunController) ActiveRuns(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	runs := make([]models.Run, 3)
+
+	runs[0] = *rc.base.PrevRun
+	runs[1] = *rc.base.CurrentRun
+	runs[2] = *rc.base.NextRun
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(&runs)
+}
+
 // DeleteRun will delete a run with the provided id
 func (rc RunController) DeleteRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
@@ -169,14 +181,29 @@ func (rc RunController) MoveRun(w http.ResponseWriter, r *http.Request, ps httpr
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (rc RunController) ActiveRuns(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	runs := make([]models.Run, 3)
+// SwitchRun will update the currently active, upcoming and previous run based on the current run index
+func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	meth := "next"
+	if r.URL.Query().Get("m") == "prev" {
+		meth = "prev"
+	}
+	c, _ := rc.base.Col.Count()
 
-	runs[0] = *rc.base.PrevRun
-	runs[1] = *rc.base.CurrentRun
-	runs[2] = *rc.base.NextRun
+	if meth == "next" {
+		if c <= rc.base.RunIndex+1 {
+			rc.base.Response("", "no next run", 400, w)
+			return
+		}
+		rc.base.RunIndex++
+	} else if meth == "prev" {
+		if rc.base.RunIndex == 0 {
+			rc.base.Response("", "no prev run", 400, w)
+			return
+		}
+		rc.base.RunIndex--
+	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	json.NewEncoder(w).Encode(&runs)
+	rc.base.UpdateActiveRuns()
+
+	w.WriteHeader(http.StatusNoContent)
 }
