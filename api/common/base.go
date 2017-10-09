@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-redis/redis"
+
 	"github.com/onestay/MarathonTools-API/api/models"
 	"github.com/onestay/MarathonTools-API/ws"
 	"gopkg.in/mgo.v2"
@@ -12,13 +14,14 @@ import (
 
 // Controller is the base struct for any controller. It's used to manage state and other things.
 type Controller struct {
-	WS         *ws.Hub
-	MGS        *mgo.Session
-	Col        *mgo.Collection
-	RunIndex   int
-	CurrentRun *models.Run
-	NextRun    *models.Run
-	PrevRun    *models.Run
+	WS          *ws.Hub
+	MGS         *mgo.Session
+	Col         *mgo.Collection
+	RunIndex    int
+	CurrentRun  *models.Run
+	NextRun     *models.Run
+	PrevRun     *models.Run
+	RedisClient *redis.Client
 }
 
 type httpResponse struct {
@@ -28,14 +31,15 @@ type httpResponse struct {
 }
 
 // NewController returns a new base controlle
-func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int) *Controller {
+func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client) *Controller {
 	runs := []models.Run{}
 	mgs.DB("marathon").C("runs").Find(nil).All(&runs)
 	c := &Controller{
-		WS:       hub,
-		MGS:      mgs,
-		RunIndex: crIndex,
-		Col:      mgs.DB("marathon").C("runs"),
+		WS:          hub,
+		MGS:         mgs,
+		RunIndex:    crIndex,
+		Col:         mgs.DB("marathon").C("runs"),
+		RedisClient: rc,
 	}
 
 	c.UpdateActiveRuns()
