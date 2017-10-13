@@ -24,9 +24,15 @@ type runInfo struct {
 }
 
 type playerInfo struct {
-	DisplayName string `json:"displayName" bson:"displayName"`
-	Country     string `json:"country" bson:"country"`
-	TwitterName string `json:"twitterName" bson:"twitterName"`
-	TwitchName  string `json:"twitchName" bson:"twitchName"`
-	YoutubeName string `json:"youtubeName" bson:"youtubeName"`
+	DisplayName string          `json:"displayName" bson:"displayName"`
+	Country     string          `json:"country" bson:"country"`
+	TwitterName string          `json:"twitterName" bson:"twitterName"`
+	TwitchName  string          `json:"twitchName" bson:"twitchName"`
+	YoutubeName string          `json:"youtubeName" bson:"youtubeName"`
+	Timer       timerPlayerInfo `json:"timer" bson:"timer"`
+}
+
+type timerPlayerInfo struct {
+	Finished bool    `json:"finished" bson:"finished"`
+	Time     float64 `json:"time" bson:"time"`
 }

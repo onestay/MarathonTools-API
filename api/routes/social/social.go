@@ -20,7 +20,7 @@ func NewSocialController(twitchClientID, twitchClientSecret string, b *common.Co
 	t := &twitchInfo{
 		ClientID:     twitchClientID,
 		ClientSecret: twitchClientSecret,
-		Scope:        "channel_editor,user:read:email",
+		Scope:        "channel_editor",
 		RedirectURI:  "http://localhost:4000/#/dashboard/config/social/twitch",
 	}
 

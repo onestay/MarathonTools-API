@@ -1,8 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/onestay/MarathonTools-API/api/models"
+	"github.com/onestay/MarathonTools-API/api/routes/timer"
 
 	"github.com/go-redis/redis"
 
@@ -13,6 +18,7 @@ import (
 	"github.com/onestay/MarathonTools-API/api/routes/runs"
 	"github.com/onestay/MarathonTools-API/ws"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -26,26 +32,9 @@ func init() {
 }
 
 func main() {
+	importRuns()
 	startHTTPServer()
-	/* if os.Getenv("jsonruns") == "true" {
-		runs := []models.Run{}
-		runFile, err := os.Open("./config/runs.json")
-		if err != nil {
-			panic("jsonruns set to true but no run file provided")
-		}
-
-		json.NewDecoder(runFile).Decode(&runs)
-
-		for _, run := range runs {
-			run.RunID = bson.NewObjectId()
-			fmt.Println(run)
-			err := mgs.DB("marathon").C("runs").Insert(run)
-			if err != nil {
-				panic("error adding run from json into db")
-			}
-		}
-		os.Rename("./config/runs.json", "./config/runs_imported.json")
-	} */
+	// os.Getenv("jsonruns") == "true"
 }
 
 func startHTTPServer() {
@@ -53,7 +42,8 @@ func startHTTPServer() {
 	hub := ws.NewHub()
 	baseController := common.NewController(hub, mgs, 0, redisClient)
 	socialController := social.NewSocialController("od8tmxq45nmgpoenjlhxfqywwfxajb", "gg6zk2imvttvur33aiolvl695jsdzl", baseController)
-	rc := runs.NewRunController(baseController)
+	timeController := timer.NewTimeController(baseController, 500)
+	runController := runs.NewRunController(baseController)
 	go hub.Run()
 
 	r.GET("/ws", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -61,23 +51,32 @@ func startHTTPServer() {
 	})
 
 	// routes for run endpoint
-	r.GET("/run/get/all", rc.GetRuns)
-	r.GET("/run/get/single/:id", rc.GetRun)
-	r.GET("/run/get/active", rc.ActiveRuns)
+	r.GET("/run/get/all", runController.GetRuns)
+	r.GET("/run/get/single/:id", runController.GetRun)
+	r.GET("/run/get/active", runController.ActiveRuns)
 
-	r.DELETE("/run/delete/:id", rc.DeleteRun)
+	r.DELETE("/run/delete/:id", runController.DeleteRun)
 
-	r.PATCH("/run/update/:id", rc.UpdateRun)
+	r.PATCH("/run/update/:id", runController.UpdateRun)
 
-	r.POST("/run/move/:id/:after", rc.MoveRun)
-	r.POST("/run/add/single", rc.AddRun)
-	r.POST("/run/switch", rc.SwitchRun)
+	r.POST("/run/move/:id/:after", runController.MoveRun)
+	r.POST("/run/add/single", runController.AddRun)
+	r.POST("/run/switch", runController.SwitchRun)
 
 	// social stuff
 	r.GET("/social/twitch/oauthurl", socialController.TwitchOAuthURL)
 	r.GET("/social/twitch/verify", socialController.TwitchCheckForAuth)
 	r.POST("/social/twitch/auth", socialController.TwitchGetToken)
 	r.DELETE("/social/twitch/token", socialController.TwitchDeleteToken)
+
+	// timer stuff
+	r.POST("/timer/start", timeController.TimerStart)
+	r.POST("/timer/pause", timeController.TimerPause)
+	r.POST("/timer/resume", timeController.TimerResume)
+	r.POST("/timer/finish", timeController.TimerFinish)
+	r.POST("/timer/finish/player/:id", timeController.TimerPlayerFinish)
+	r.POST("/timer/reset", timeController.TimerReset)
+
 	log.Println("server running on :3001")
 	log.Fatal(http.ListenAndServe(":3001", r))
 }
@@ -99,4 +98,28 @@ func getRedisClient() *redis.Client {
 	})
 
 	return client
+}
+
+func importRuns() {
+	runs := []models.Run{}
+	runFile, err := os.Open("./config/runs.json")
+	if err != nil {
+		log.Println("no runs file... this can be ignored if runs are already imported")
+		return
+	}
+
+	json.NewDecoder(runFile).Decode(&runs)
+
+	for _, run := range runs {
+		run.RunID = bson.NewObjectId()
+		err := mgs.DB("marathon").C("runs").Insert(run)
+		if err != nil {
+			panic("error adding run from json into db")
+		}
+	}
+	log.Printf("imported %v runs", len(runs))
+	err = os.Rename("./config/runs.json", "./config/runs_imported.json")
+	if err != nil {
+		log.Println("error renaming runs file")
+	}
 }

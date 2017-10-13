@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-redis/redis"
@@ -49,7 +48,6 @@ func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client)
 
 // UpdateActiveRuns will update the the previous, current and next run in the base controller struct
 func (c *Controller) UpdateActiveRuns() {
-	fmt.Println(c.RunIndex)
 	runs := []models.Run{}
 	c.Col.Find(nil).All(&runs)
 	c.CurrentRun = &runs[c.RunIndex]
@@ -90,14 +88,77 @@ func (c Controller) SendInitialData() []byte {
 	c.Col.Find(nil).All(&runs)
 
 	data := struct {
-		Runs       []models.Run `json:"runs,omitempty"`
-		PrevRun    models.Run   `json:"prevRun,omitempty"`
-		CurrentRun models.Run   `json:"currentRun,omitempty"`
-		NextRun    models.Run   `json:"nextRun,omitempty"`
-		RunIndex   int          `json:"runIndex,omitempty"`
-	}{runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex}
+		DataType   string       `json:"dataType"`
+		Runs       []models.Run `json:"runs"`
+		PrevRun    models.Run   `json:"prevRun"`
+		CurrentRun models.Run   `json:"currentRun"`
+		NextRun    models.Run   `json:"nextRun"`
+		RunIndex   int          `json:"runIndex"`
+	}{"initalData", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex}
 
 	d, _ := json.Marshal(data)
 
 	return d
+}
+
+// WSRunUpdate sends an update for all runs over the websocket and current runs over the websocket.
+func (c Controller) WSRunUpdate() {
+	runs := []models.Run{}
+	c.Col.Find(nil).All(&runs)
+
+	data := struct {
+		DataType   string       `json:"dataType"`
+		Runs       []models.Run `json:"runs"`
+		PrevRun    models.Run   `json:"prevRun"`
+		CurrentRun models.Run   `json:"currentRun"`
+		NextRun    models.Run   `json:"nextRun"`
+		RunIndex   int          `json:"runIndex"`
+	}{"runUpdate", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex}
+
+	d, _ := json.Marshal(data)
+
+	c.WS.Broadcast <- d
+}
+
+// WSRunsOnlyUpdate only updates runs and not current runs
+func (c Controller) WSRunsOnlyUpdate() {
+	runs := []models.Run{}
+	c.Col.Find(nil).All(&runs)
+
+	data := struct {
+		DataType string       `json:"dataType"`
+		Runs     []models.Run `json:"runs"`
+	}{"runUpdate", runs}
+
+	d, _ := json.Marshal(data)
+
+	c.WS.Broadcast <- d
+}
+
+// WSCurrentUpdate sends ws data with the current runs
+func (c Controller) WSCurrentUpdate() {
+	data := struct {
+		DataType   string     `json:"dataType"`
+		PrevRun    models.Run `json:"prevRun"`
+		CurrentRun models.Run `json:"currentRun"`
+		NextRun    models.Run `json:"nextRun"`
+		RunIndex   int        `json:"runIndex"`
+	}{"runUpdate", *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex}
+
+	d, _ := json.Marshal(data)
+
+	c.WS.Broadcast <- d
+}
+
+// WSTimeUpdate sends a time update
+// We do that here because timerState is not defined in the base controller and I'm zoo lazy to change everything
+func (c Controller) WSTimeUpdate(time float64) {
+	data := struct {
+		DataType string  `json:"dataType"`
+		T        float64 `json:"t"`
+	}{"timeUpdate", time}
+
+	d, _ := json.Marshal(data)
+
+	c.WS.Broadcast <- d
 }

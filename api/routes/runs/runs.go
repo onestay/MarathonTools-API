@@ -39,6 +39,8 @@ func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+
+	rc.base.WSRunUpdate()
 }
 
 // GetRuns will return all runs from the mgo collection
@@ -108,6 +110,8 @@ func (rc RunController) DeleteRun(w http.ResponseWriter, r *http.Request, ps htt
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+
+	rc.base.WSRunUpdate()
 }
 
 // UpdateRun will update the run with the id provided and the request body
@@ -135,6 +139,8 @@ func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps htt
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+
+	rc.base.WSRunUpdate()
 }
 
 // MoveRun takes the run by id and moves it after the run provided by after
@@ -179,6 +185,8 @@ func (rc RunController) MoveRun(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+
+	rc.base.WSRunUpdate()
 }
 
 // SwitchRun will update the currently active, upcoming and previous run based on the current run index
@@ -206,4 +214,6 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 	rc.base.UpdateActiveRuns()
 
 	w.WriteHeader(http.StatusNoContent)
+
+	rc.base.WSRunUpdate()
 }
