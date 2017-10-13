@@ -128,13 +128,26 @@ func (c Controller) TimerReset(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 	c.ticker.Stop()
 
+	for i := 0; i < len(c.b.CurrentRun.Players); i++ {
+		c.b.CurrentRun.Players[i].Timer.Finished = false
+		c.b.CurrentRun.Players[i].Timer.Time = 0
+	}
+
 	c.state = stopped
 	c.wsStateUpdate()
+
+	w.WriteHeader(http.StatusNoContent)
+	c.b.WSCurrentUpdate()
+
 }
 
 // TimerPlayerFinish will finish a specific player
 // req state: running
 func (c Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if c.invalidState("playerFinish", w) {
+		return
+	}
+
 	pID, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		c.b.Response("", "id not provided or not valid int", 400, w)
@@ -142,10 +155,8 @@ func (c Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, ps
 	}
 	c.b.CurrentRun.Players[pID].Timer.Finished = true
 	c.b.CurrentRun.Players[pID].Timer.Time = c.time
-
-	if c.invalidState("playerFinish", w) {
-		return
-	}
+	c.b.WSCurrentUpdate()
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (c Controller) invalidState(method string, w http.ResponseWriter) bool {
