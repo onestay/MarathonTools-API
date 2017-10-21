@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/go-redis/redis"
+	"gopkg.in/mgo.v2"
 
 	"github.com/onestay/MarathonTools-API/api/models"
 	"github.com/onestay/MarathonTools-API/ws"
-	"gopkg.in/mgo.v2"
 )
 
 // Controller is the base struct for any controller. It's used to manage state and other things.
