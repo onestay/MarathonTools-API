@@ -74,7 +74,7 @@ func startHTTPServer() {
 	r.POST("/timer/pause", timeController.TimerPause)
 	r.POST("/timer/resume", timeController.TimerResume)
 	r.POST("/timer/finish", timeController.TimerFinish)
-	r.POST("/timer/finish/player/:id", timeController.TimerPlayerFinish)
+	r.POST("/timer/player/finish/:id", timeController.TimerPlayerFinish)
 	r.POST("/timer/reset", timeController.TimerReset)
 
 	log.Println("server running on :3001")

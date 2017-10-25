@@ -51,7 +51,6 @@ func (c *Controller) timerLoop() {
 				difference := t.Sub(c.startTime).Seconds()
 				go c.b.WSTimeUpdate(difference)
 				c.time = difference
-				fmt.Println(difference)
 			}
 		}
 	}()
@@ -122,7 +121,7 @@ func (c *Controller) TimerFinish(w http.ResponseWriter, r *http.Request, _ httpr
 
 // TimerReset will reset the timer
 // req state: finished
-func (c Controller) TimerReset(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (c *Controller) TimerReset(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if c.invalidState("reset", w) {
 		return
 	}
@@ -143,7 +142,7 @@ func (c Controller) TimerReset(w http.ResponseWriter, r *http.Request, _ httprou
 
 // TimerPlayerFinish will finish a specific player
 // req state: running
-func (c Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (c *Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if c.invalidState("playerFinish", w) {
 		return
 	}
@@ -156,20 +155,30 @@ func (c Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, ps
 	c.b.CurrentRun.Players[pID].Timer.Finished = true
 	c.b.CurrentRun.Players[pID].Timer.Time = c.time
 	c.b.WSCurrentUpdate()
+
+	for i := 0; i < len(c.b.CurrentRun.Players); i++ {
+		if c.b.CurrentRun.Players[i].Timer.Finished != true {
+			break
+		}
+		c.TimerFinish(w, r, ps)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c Controller) invalidState(method string, w http.ResponseWriter) bool {
+func (c *Controller) invalidState(method string, w http.ResponseWriter) bool {
+	fmt.Println(c.state)
 	f := true
-	if method == "start" && c.state == 2 {
+	if method == "start" && c.state == stopped {
 		f = false
-	} else if method == "pause" && c.state == running {
+	} else if method == "finish" && c.state == running {
 		f = false
 	} else if method == "resume" && c.state == paused || c.state == finished {
 		f = false
 	} else if method == "playerFinish" && c.state == running {
 		f = false
-	} else if method == "finish" && c.state == running {
+	} else if method == "pause" && c.state == running {
 		f = false
 	} else if method == "reset" && c.state == finished {
 		f = false
@@ -184,7 +193,7 @@ func (c Controller) invalidState(method string, w http.ResponseWriter) bool {
 func (c Controller) wsStateUpdate() {
 	data := struct {
 		DataType string     `json:"dataType"`
-		State    timerState `json:"stat"`
+		State    timerState `json:"state"`
 	}{"stateUpdate", c.state}
 
 	d, _ := json.Marshal(data)

@@ -5,10 +5,11 @@ import (
 	"net/http"
 
 	"github.com/go-redis/redis"
-	"gopkg.in/mgo.v2"
 
 	"github.com/onestay/MarathonTools-API/api/models"
 	"github.com/onestay/MarathonTools-API/ws"
+
+	"gopkg.in/mgo.v2"
 )
 
 // Controller is the base struct for any controller. It's used to manage state and other things.
@@ -128,7 +129,7 @@ func (c Controller) WSRunsOnlyUpdate() {
 	data := struct {
 		DataType string       `json:"dataType"`
 		Runs     []models.Run `json:"runs"`
-	}{"runUpdate", runs}
+	}{"runsOnlyUpdate", runs}
 
 	d, _ := json.Marshal(data)
 
@@ -143,7 +144,7 @@ func (c Controller) WSCurrentUpdate() {
 		CurrentRun models.Run `json:"currentRun"`
 		NextRun    models.Run `json:"nextRun"`
 		RunIndex   int        `json:"runIndex"`
-	}{"runUpdate", *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex}
+	}{"runCurrentUpdate", *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex}
 
 	d, _ := json.Marshal(data)
 
