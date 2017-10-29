@@ -1,7 +1,6 @@
 package timer
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,15 +10,6 @@ import (
 	"github.com/onestay/MarathonTools-API/api/common"
 )
 
-type timerState int
-
-const (
-	running timerState = iota
-	paused
-	stopped
-	finished
-)
-
 // Controller is the time controller
 type Controller struct {
 	b               *common.Controller
@@ -27,17 +17,13 @@ type Controller struct {
 	refreshInterval int
 	startTime       time.Time
 	lastPaused      time.Time
-	state           timerState
-	time            float64
 }
 
 // NewTimeController initializes and returns a new time controller. The refreshInterval is in ms
 func NewTimeController(b *common.Controller, refreshInterval int) *Controller {
 	return &Controller{
 		b:               b,
-		state:           stopped,
 		refreshInterval: refreshInterval,
-		time:            0,
 	}
 }
 
@@ -50,7 +36,7 @@ func (c *Controller) timerLoop() {
 			case t := <-c.ticker.C:
 				difference := t.Sub(c.startTime).Seconds()
 				go c.b.WSTimeUpdate(difference)
-				c.time = difference
+				c.b.TimerTime = difference
 			}
 		}
 	}()
@@ -66,8 +52,8 @@ func (c *Controller) TimerStart(w http.ResponseWriter, r *http.Request, _ httpro
 	c.startTime = time.Now()
 	c.timerLoop()
 
-	c.state = running
-	c.wsStateUpdate()
+	c.b.TimerState = common.Running
+	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -82,8 +68,8 @@ func (c *Controller) TimerPause(w http.ResponseWriter, r *http.Request, _ httpro
 	c.lastPaused = time.Now()
 	c.ticker.Stop()
 
-	c.state = paused
-	c.wsStateUpdate()
+	c.b.TimerState = common.Paused
+	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -98,8 +84,8 @@ func (c *Controller) TimerResume(w http.ResponseWriter, r *http.Request, _ httpr
 	c.startTime = c.startTime.Add(time.Since(c.lastPaused))
 	c.timerLoop()
 
-	c.state = running
-	c.wsStateUpdate()
+	c.b.TimerState = common.Running
+	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -113,8 +99,8 @@ func (c *Controller) TimerFinish(w http.ResponseWriter, r *http.Request, _ httpr
 
 	c.ticker.Stop()
 
-	c.state = finished
-	c.wsStateUpdate()
+	c.b.TimerState = common.Finished
+	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -132,8 +118,8 @@ func (c *Controller) TimerReset(w http.ResponseWriter, r *http.Request, _ httpro
 		c.b.CurrentRun.Players[i].Timer.Time = 0
 	}
 
-	c.state = stopped
-	c.wsStateUpdate()
+	c.b.TimerState = common.Stopped
+	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
 	c.b.WSCurrentUpdate()
@@ -153,7 +139,7 @@ func (c *Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 	c.b.CurrentRun.Players[pID].Timer.Finished = true
-	c.b.CurrentRun.Players[pID].Timer.Time = c.time
+	c.b.CurrentRun.Players[pID].Timer.Time = c.b.TimerTime
 	c.b.WSCurrentUpdate()
 
 	for i := 0; i < len(c.b.CurrentRun.Players); i++ {
@@ -168,35 +154,24 @@ func (c *Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, p
 }
 
 func (c *Controller) invalidState(method string, w http.ResponseWriter) bool {
-	fmt.Println(c.state)
+	fmt.Println(c.b.TimerState)
 	f := true
-	if method == "start" && c.state == stopped {
+	if method == "start" && c.b.TimerState == common.Stopped {
 		f = false
-	} else if method == "finish" && c.state == running {
+	} else if method == "finish" && c.b.TimerState == common.Running {
 		f = false
-	} else if method == "resume" && c.state == paused || c.state == finished {
+	} else if method == "resume" && c.b.TimerState == common.Paused || c.b.TimerState == common.Finished {
 		f = false
-	} else if method == "playerFinish" && c.state == running {
+	} else if method == "playerFinish" && c.b.TimerState == common.Running {
 		f = false
-	} else if method == "pause" && c.state == running {
+	} else if method == "pause" && c.b.TimerState == common.Running {
 		f = false
-	} else if method == "reset" && c.state == finished {
+	} else if method == "reset" && c.b.TimerState == common.Finished {
 		f = false
 	}
 
 	if f {
-		c.b.Response("", fmt.Sprintf("method %v not allowed with state %v", method, c.state), 400, w)
+		c.b.Response("", fmt.Sprintf("method %v not allowed with state %v", method, c.b.TimerState), 400, w)
 	}
 	return f
-}
-
-func (c Controller) wsStateUpdate() {
-	data := struct {
-		DataType string     `json:"dataType"`
-		State    timerState `json:"state"`
-	}{"stateUpdate", c.state}
-
-	d, _ := json.Marshal(data)
-
-	c.b.WS.Broadcast <- d
 }

@@ -146,6 +146,7 @@ func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps htt
 // MoveRun takes the run by id and moves it after the run provided by after
 // to do this we have to pull every run from the collection, than delete every run in the db
 // do the moving and insert all the records into the db again
+// which is kinda retarded tbh
 func (rc RunController) MoveRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	after := ps.ByName("after")
