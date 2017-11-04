@@ -192,6 +192,10 @@ func (rc RunController) MoveRun(w http.ResponseWriter, r *http.Request, ps httpr
 
 // SwitchRun will update the currently active, upcoming and previous run based on the current run index
 func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if rc.base.TimerState != common.TimerStopped {
+		rc.base.Response("", "can't switch runs while timer is running", 400, w)
+		return
+	}
 	meth := "next"
 	if r.URL.Query().Get("m") == "prev" {
 		meth = "prev"

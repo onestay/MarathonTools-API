@@ -37,14 +37,14 @@ type httpResponse struct {
 type TimerState = int
 
 const (
-	// Running represents a running timer
-	Running TimerState = iota
-	// Paused represents a paused timer
-	Paused
-	// Stopped represents a stopped timer
-	Stopped
-	// Finished represents a finished timer
-	Finished
+	// TimerRunning represents a running timer
+	TimerRunning TimerState = iota
+	// TimerPaused represents a paused timer
+	TimerPaused
+	// TimerStopped represents a stopped timer
+	TimerStopped
+	// TimerFinished represents a finished timer
+	TimerFinished
 )
 
 // NewController returns a new base controlle
@@ -57,7 +57,7 @@ func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client)
 		RunIndex:    crIndex,
 		Col:         mgs.DB("marathon").C("runs"),
 		RedisClient: rc,
-		TimerState:  0,
+		TimerState:  2,
 		TimerTime:   0,
 	}
 

@@ -76,11 +76,11 @@ func (c Controller) WSCurrentUpdate() {
 }
 
 // WSTimeUpdate sends a time update
-func (c Controller) WSTimeUpdate(time float64) {
+func (c Controller) WSTimeUpdate() {
 	data := struct {
 		DataType string  `json:"dataType"`
 		T        float64 `json:"t"`
-	}{"timeUpdate", time}
+	}{"timeUpdate", c.TimerTime}
 
 	d, _ := json.Marshal(data)
 

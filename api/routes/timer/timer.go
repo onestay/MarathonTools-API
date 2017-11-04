@@ -35,8 +35,8 @@ func (c *Controller) timerLoop() {
 			select {
 			case t := <-c.ticker.C:
 				difference := t.Sub(c.startTime).Seconds()
-				go c.b.WSTimeUpdate(difference)
 				c.b.TimerTime = difference
+				c.b.WSTimeUpdate()
 			}
 		}
 	}()
@@ -52,7 +52,7 @@ func (c *Controller) TimerStart(w http.ResponseWriter, r *http.Request, _ httpro
 	c.startTime = time.Now()
 	c.timerLoop()
 
-	c.b.TimerState = common.Running
+	c.b.TimerState = common.TimerRunning
 	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
@@ -68,7 +68,7 @@ func (c *Controller) TimerPause(w http.ResponseWriter, r *http.Request, _ httpro
 	c.lastPaused = time.Now()
 	c.ticker.Stop()
 
-	c.b.TimerState = common.Paused
+	c.b.TimerState = common.TimerPaused
 	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
@@ -80,11 +80,13 @@ func (c *Controller) TimerResume(w http.ResponseWriter, r *http.Request, _ httpr
 	if c.invalidState("resume", w) {
 		return
 	}
-
+	if c.b.TimerState == common.TimerFinished {
+		c.lastPaused = time.Now()
+	}
 	c.startTime = c.startTime.Add(time.Since(c.lastPaused))
-	c.timerLoop()
+	go c.timerLoop()
 
-	c.b.TimerState = common.Running
+	c.b.TimerState = common.TimerRunning
 	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
@@ -99,7 +101,7 @@ func (c *Controller) TimerFinish(w http.ResponseWriter, r *http.Request, _ httpr
 
 	c.ticker.Stop()
 
-	c.b.TimerState = common.Finished
+	c.b.TimerState = common.TimerFinished
 	c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
@@ -117,9 +119,10 @@ func (c *Controller) TimerReset(w http.ResponseWriter, r *http.Request, _ httpro
 		c.b.CurrentRun.Players[i].Timer.Finished = false
 		c.b.CurrentRun.Players[i].Timer.Time = 0
 	}
-
-	c.b.TimerState = common.Stopped
-	c.b.WSStateUpdate()
+	c.b.TimerTime = 0
+	go c.b.WSTimeUpdate()
+	c.b.TimerState = common.TimerStopped
+	go c.b.WSStateUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
 	c.b.WSCurrentUpdate()
@@ -142,31 +145,29 @@ func (c *Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, p
 	c.b.CurrentRun.Players[pID].Timer.Time = c.b.TimerTime
 	c.b.WSCurrentUpdate()
 
-	for i := 0; i < len(c.b.CurrentRun.Players); i++ {
-		if c.b.CurrentRun.Players[i].Timer.Finished != true {
-			break
-		}
+	if c.allFinished() {
 		c.TimerFinish(w, r, ps)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+
 }
 
 func (c *Controller) invalidState(method string, w http.ResponseWriter) bool {
 	fmt.Println(c.b.TimerState)
 	f := true
-	if method == "start" && c.b.TimerState == common.Stopped {
+	if method == "start" && c.b.TimerState == common.TimerStopped {
 		f = false
-	} else if method == "finish" && c.b.TimerState == common.Running {
+	} else if method == "finish" && c.b.TimerState == common.TimerRunning {
 		f = false
-	} else if method == "resume" && c.b.TimerState == common.Paused || c.b.TimerState == common.Finished {
+	} else if method == "resume" && c.b.TimerState == common.TimerPaused || c.b.TimerState == common.TimerFinished {
 		f = false
-	} else if method == "playerFinish" && c.b.TimerState == common.Running {
+	} else if method == "playerFinish" && c.b.TimerState == common.TimerRunning {
 		f = false
-	} else if method == "pause" && c.b.TimerState == common.Running {
+	} else if method == "pause" && c.b.TimerState == common.TimerRunning {
 		f = false
-	} else if method == "reset" && c.b.TimerState == common.Finished {
+	} else if method == "reset" && c.b.TimerState == common.TimerFinished || c.b.TimerState == common.TimerPaused {
 		f = false
 	}
 
@@ -174,4 +175,18 @@ func (c *Controller) invalidState(method string, w http.ResponseWriter) bool {
 		c.b.Response("", fmt.Sprintf("method %v not allowed with state %v", method, c.b.TimerState), 400, w)
 	}
 	return f
+}
+
+func (c Controller) allFinished() bool {
+	count := 0
+	for i := 0; i < len(c.b.CurrentRun.Players); i++ {
+		if c.b.CurrentRun.Players[i].Timer.Finished == true {
+			count++
+		}
+	}
+
+	if count == len(c.b.CurrentRun.Players) {
+		return true
+	}
+	return false
 }
