@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/dghubble/oauth1"
+  packages = [".","twitter"]
+  revision = "70562a5920ad9b6ff03ef697c0f90ae569abbd2b"
+  version = "v0.4.0"
+
+[[projects]]
   name = "github.com/go-redis/redis"
   packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
   revision = "8e6b51ec3a92ec095dcbd2439c7a3eec6b6cb586"
@@ -20,6 +26,12 @@
   version = "v1.1"
 
 [[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context"]
+  revision = "c7086645de248775cbf2373cf5ca4d2fa664b8c1"
+
+[[projects]]
   branch = "v2"
   name = "gopkg.in/mgo.v2"
   packages = [".","bson","internal/json","internal/sasl","internal/scram"]
@@ -28,6 +40,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d5555618e99413840cb3e94689f2ab96cc8c0645db831f1a3ab3397816f348bb"
+  inputs-digest = "fcfef62254ac1cb6451120e68227cced92d64d2aea04aee5fc24d0251a8b2539"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -41,7 +41,7 @@ func startHTTPServer() {
 	r := httprouter.New()
 	hub := ws.NewHub()
 	baseController := common.NewController(hub, mgs, 0, redisClient)
-	socialController := social.NewSocialController("od8tmxq45nmgpoenjlhxfqywwfxajb", "gg6zk2imvttvur33aiolvl695jsdzl", baseController)
+	socialController := social.NewSocialController("od8tmxq45nmgpoenjlhxfqywwfxajb", "gg6zk2imvttvur33aiolvl695jsdzl", baseController, "k51MJQ1GlZIerZPIr9fDG8dw9", "W0BnR6zWyHkttBAlbWzVuvFsxqT5Sletf8NjwjGNzhC3U708ED")
 	timeController := timer.NewTimeController(baseController, 500)
 	runController := runs.NewRunController(baseController)
 	go hub.Run()
@@ -68,6 +68,8 @@ func startHTTPServer() {
 	r.GET("/social/twitch/verify", socialController.TwitchCheckForAuth)
 	r.POST("/social/twitch/auth", socialController.TwitchGetToken)
 	r.DELETE("/social/twitch/token", socialController.TwitchDeleteToken)
+
+	r.GET("/social/twitter/oauthurl", socialController.TwitterOAuthURL)
 
 	// timer stuff
 	r.POST("/timer/start", timeController.TimerStart)

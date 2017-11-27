@@ -82,6 +82,10 @@ func (c *Controller) TimerResume(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 	if c.b.TimerState == common.TimerFinished {
 		c.lastPaused = time.Now()
+		for i := 0; i < len(c.b.CurrentRun.Players); i++ {
+			c.b.CurrentRun.Players[i].Timer.Finished = false
+			c.b.CurrentRun.Players[i].Timer.Time = 0
+		}
 	}
 	c.startTime = c.startTime.Add(time.Since(c.lastPaused))
 	go c.timerLoop()
@@ -102,7 +106,16 @@ func (c *Controller) TimerFinish(w http.ResponseWriter, r *http.Request, _ httpr
 	c.ticker.Stop()
 
 	c.b.TimerState = common.TimerFinished
-	c.b.WSStateUpdate()
+
+	// if the finish is manually called all players which are not done yet should be set to done and updated with the current time
+	for i := 0; i < len(c.b.CurrentRun.Players); i++ {
+		if !c.b.CurrentRun.Players[i].Timer.Finished {
+			c.b.CurrentRun.Players[i].Timer.Time = c.b.TimerTime
+			c.b.CurrentRun.Players[i].Timer.Finished = true
+		}
+	}
+	go c.b.WSStateUpdate()
+	go c.b.WSCurrentUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -143,7 +156,7 @@ func (c *Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, p
 	}
 	c.b.CurrentRun.Players[pID].Timer.Finished = true
 	c.b.CurrentRun.Players[pID].Timer.Time = c.b.TimerTime
-	c.b.WSCurrentUpdate()
+	go c.b.WSCurrentUpdate()
 
 	if c.allFinished() {
 		c.TimerFinish(w, r, ps)
@@ -155,7 +168,6 @@ func (c *Controller) TimerPlayerFinish(w http.ResponseWriter, r *http.Request, p
 }
 
 func (c *Controller) invalidState(method string, w http.ResponseWriter) bool {
-	fmt.Println(c.b.TimerState)
 	f := true
 	if method == "start" && c.b.TimerState == common.TimerStopped {
 		f = false
