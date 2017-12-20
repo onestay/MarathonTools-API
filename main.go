@@ -17,7 +17,7 @@ import (
 	"github.com/onestay/MarathonTools-API/api/common"
 	"github.com/onestay/MarathonTools-API/api/routes/runs"
 	"github.com/onestay/MarathonTools-API/ws"
-	"gopkg.in/mgo.v2"
+	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -68,6 +68,8 @@ func startHTTPServer() {
 	r.GET("/social/twitch/verify", socialController.TwitchCheckForAuth)
 	r.POST("/social/twitch/auth", socialController.TwitchGetToken)
 	r.DELETE("/social/twitch/token", socialController.TwitchDeleteToken)
+	r.POST("/social/twitch/titletemplate", socialController.TwitchTitleTemplate)
+	r.PUT("/social/twitch/update", socialController.TwitchUpdateInfo)
 
 	r.GET("/social/twitter/oauthurl", socialController.TwitterOAuthURL)
 
