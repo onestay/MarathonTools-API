@@ -98,3 +98,15 @@ func (c Controller) WSStateUpdate() {
 
 	c.WS.Broadcast <- d
 }
+
+// WSReportError provides a helper to send an error message to the client
+func (c Controller) WSReportError(e string) {
+	data := struct {
+		DataType string `json:"dataType"`
+		Error    string `json:"error"`
+	}{"error", e}
+
+	d, _ := json.Marshal(data)
+
+	c.WS.Broadcast <- d
+}
