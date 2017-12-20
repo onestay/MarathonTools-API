@@ -81,17 +81,24 @@ func (c *Controller) TimerResume(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 	if c.b.TimerState == common.TimerFinished {
-		c.lastPaused = time.Now()
+	 	c.lastPaused = time.Now()
 		for i := 0; i < len(c.b.CurrentRun.Players); i++ {
-			c.b.CurrentRun.Players[i].Timer.Finished = false
-			c.b.CurrentRun.Players[i].Timer.Time = 0
+	 		c.b.CurrentRun.Players[i].Timer.Finished = false
+	 		c.b.CurrentRun.Players[i].Timer.Time = 0
 		}
 	}
-	c.startTime = c.startTime.Add(time.Since(c.lastPaused))
-	go c.timerLoop()
 
-	c.b.TimerState = common.TimerRunning
-	c.b.WSStateUpdate()
+	go c.b.WSCurrentUpdate()
+	go func() {
+		c.startTime = c.startTime.Add(time.Since(c.lastPaused))
+		go c.timerLoop()	
+	}()
+
+	go func() {
+		c.b.TimerState = common.TimerRunning
+		c.b.WSStateUpdate()
+	}()
+
 
 	w.WriteHeader(http.StatusNoContent)
 }
