@@ -2,6 +2,8 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/onestay/MarathonTools-API/api/models"
@@ -41,4 +43,15 @@ func (c Controller) Response(res, err string, code int, w http.ResponseWriter) {
 	}
 
 	json.NewEncoder(w).Encode(resStruct)
+}
+
+// LogError is a helper function to log any errors and send a message informing the client about the error over websocket if wanted
+func (c Controller) LogError(action string, err error, sendToClient bool) {
+	msg := fmt.Sprintf("An error occurred while %v. The error is %v\n", action, err)
+	go func() {
+		if sendToClient {
+			c.WSReportError(msg)
+		}
+	}()
+	log.Printf(msg)
 }
