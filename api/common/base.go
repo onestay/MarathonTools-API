@@ -46,7 +46,7 @@ const (
 	TimerFinished
 )
 
-// NewController returns a new base controlle
+// NewController returns a new base controller
 func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client) *Controller {
 	runs := []models.Run{}
 	mgs.DB("marathon").C("runs").Find(nil).All(&runs)
