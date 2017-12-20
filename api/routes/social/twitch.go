@@ -19,6 +19,12 @@ type TwitchResponse struct {
 	ExpiresIn    int    `json:"expires_in" bson:"expiresIn"`
 	Scope        string `json:"scope" bson:"scope"`
 	InsertDate   time.Time
+	ChannelID    string
+}
+
+type channelError struct {
+	Error        bool
+	ErrorMessage string
 }
 
 const (
@@ -68,6 +74,12 @@ func (sc Controller) TwitchGetToken(w http.ResponseWriter, r *http.Request, _ ht
 	resStruct := TwitchResponse{}
 	resStruct.InsertDate = time.Now()
 	json.NewDecoder(res.Body).Decode(&resStruct)
+
+	resChan := make(chan bool)
+
+	go sc.getChannelID(resChan, &resStruct)
+	<-resChan
+
 	b, _ := json.Marshal(resStruct)
 
 	err = sc.base.RedisClient.Set("twitchAuth", b, 0).Err()
@@ -91,6 +103,7 @@ func (sc Controller) TwitchCheckForAuth(w http.ResponseWriter, r *http.Request, 
 	sc.base.Response("true", "", 200, w)
 }
 
+// TwitchDeleteToken will delete and revoke the twitch token
 func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	b, _ := sc.base.RedisClient.Get("twitchAuth").Bytes()
 	t := TwitchResponse{}
@@ -101,7 +114,6 @@ func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _
 	uri, _ = url.Parse(revokeURL)
 
 	parameters := url.Values{}
-	parameters.Add("client_id", sc.twitchInfo.ClientID)
 	parameters.Add("token", t.AccessToken)
 	uri.RawQuery = parameters.Encode()
 
@@ -110,4 +122,43 @@ func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _
 	sc.base.RedisClient.Del("twitchAuth")
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
+	client := http.Client{}
+
+	req, err := http.NewRequest("GET", "https://api.twitch.tv/kraken/channel", nil)
+	if err != nil {
+		log.Println("Error creating request to get Channel ID")
+	}
+
+	req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
+	req.Header.Add("Authorization", "OAuth "+t.AccessToken)
+	req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error doing request. Err: %v", err)
+	}
+
+	id := struct {
+		ID string `json:"_id"`
+	}{}
+
+	json.NewDecoder(resp.Body).Decode(&id)
+	t.ChannelID = id.ID
+
+	res <- true
+}
+
+func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+}
+
+func (sc Controller) twitchUpdateGame(res chan channelError) {
+
+}
+
+func (sc Controller) twitchUpdateTitle(res chan channelError) {
+
 }

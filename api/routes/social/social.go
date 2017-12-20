@@ -31,14 +31,14 @@ func NewSocialController(twitchClientID, twitchClientSecret string, b *common.Co
 	t := &twitchInfo{
 		ClientID:     twitchClientID,
 		ClientSecret: twitchClientSecret,
-		Scope:        "channel_editor",
-		RedirectURI:  "http://localhost:4000/dashboard/config/social/twitch",
+		Scope:        "channel_editor channel_read",
+		RedirectURI:  "http://localhost:4000/#/dashboard/config/social/twitch",
 	}
 
 	tw := &oauth1.Config{
 		ConsumerKey:    twitterKey,
 		ConsumerSecret: twitterSecret,
-		CallbackURL:    "http://localhost:4000/dashboard/config/social/twitter",
+		CallbackURL:    "http://localhost:4000/#/dashboard/config/social/twitter",
 		Endpoint:       twitter.AuthorizeEndpoint,
 	}
 
