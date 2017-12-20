@@ -9,7 +9,7 @@ type Run struct {
 	RunID    bson.ObjectId `json:"runID" bson:"_id"`
 	GameInfo gameInfo      `json:"gameInfo" bson:"gameInfo"`
 	RunInfo  runInfo       `json:"runInfo" bson:"runInfo"`
-	Players  []playerInfo  `json:"players" bson:"playerInfo"`
+	Players  []PlayerInfo  `json:"players" bson:"playerInfo"`
 }
 
 type gameInfo struct {
@@ -23,7 +23,7 @@ type runInfo struct {
 	Platform string `json:"platform" bso:"platform"`
 }
 
-type playerInfo struct {
+type PlayerInfo struct {
 	DisplayName string          `json:"displayName" bson:"displayName"`
 	Country     string          `json:"country" bson:"country"`
 	TwitterName string          `json:"twitterName" bson:"twitterName"`
