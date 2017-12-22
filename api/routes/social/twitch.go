@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/onestay/MarathonTools-API/api/models"
-
 	"github.com/go-redis/redis"
+
+	"github.com/onestay/MarathonTools-API/api/models"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -32,6 +32,14 @@ type channelError struct {
 	ErrorMessage string
 }
 
+type twitchTitleOptions struct {
+	Game     string
+	Runner   []models.PlayerInfo
+	Platform string
+	Estimate string
+	Category string
+}
+
 const (
 	authorizeURL     = "https://api.twitch.tv/kraken/oauth2/authorize"
 	tokenURL         = "https://api.twitch.tv/kraken/oauth2/token"
@@ -39,97 +47,6 @@ const (
 	channelURL       = "https://api.twitch.tv/kraken/channel"
 	updateChannelURL = "https://api.twitch.tv/kraken/channels"
 )
-
-// TwitchOAuthURL will return the oauth url used for twitch auth
-func (sc Controller) TwitchOAuthURL(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var uri *url.URL
-	uri, _ = url.Parse(authorizeURL)
-
-	parameters := url.Values{}
-	parameters.Add("client_id", sc.twitchInfo.ClientID)
-	parameters.Add("redirect_uri", sc.twitchInfo.RedirectURI)
-	parameters.Add("response_type", "code")
-	parameters.Add("scope", sc.twitchInfo.Scope)
-	uri.RawQuery = parameters.Encode()
-
-	sc.base.Response(uri.String(), "", http.StatusOK, w)
-
-}
-
-// TwitchGetToken will return an access token from the twitch servers after a code from the client has been obtained
-func (sc Controller) TwitchGetToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	code := r.URL.Query().Get("code")
-	var uri *url.URL
-
-	uri, _ = url.Parse(tokenURL)
-
-	parameters := url.Values{}
-	parameters.Add("client_id", sc.twitchInfo.ClientID)
-	parameters.Add("redirect_uri", sc.twitchInfo.RedirectURI)
-	parameters.Add("client_secret", sc.twitchInfo.ClientSecret)
-	parameters.Add("grant_type", "authorization_code")
-	parameters.Add("code", code)
-	uri.RawQuery = parameters.Encode()
-
-	res, err := http.Post(uri.String(), "", nil)
-	if err != nil || res.StatusCode != 200 {
-		log.Printf("Error in getting oauth token, err: %v", err)
-		sc.base.Response("", "error getting oauth token", 500, w)
-		return
-	}
-
-	resStruct := TwitchResponse{}
-	resStruct.InsertDate = time.Now()
-	json.NewDecoder(res.Body).Decode(&resStruct)
-
-	resChan := make(chan bool)
-
-	go sc.getChannelID(resChan, &resStruct)
-	<-resChan
-
-	b, _ := json.Marshal(resStruct)
-
-	err = sc.base.RedisClient.Set("twitchAuth", b, 0).Err()
-	if err != nil {
-		log.Printf("Error in setting auth info, err: %v", err)
-		sc.base.Response("", "error", 500, w)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// TwitchCheckForAuth will check if there is an access token available. It doesn't necessairly say if it's expired or invalid
-func (sc Controller) TwitchCheckForAuth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	_, err := sc.base.RedisClient.Get("twitchAuth").Result()
-	if err == redis.Nil {
-		sc.base.Response("false", "", 200, w)
-		return
-	}
-
-	sc.base.Response("true", "", 200, w)
-}
-
-// TwitchDeleteToken will delete and revoke the twitch token
-func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	b, _ := sc.base.RedisClient.Get("twitchAuth").Bytes()
-	t := TwitchResponse{}
-	var uri *url.URL
-
-	json.Unmarshal(b, &t)
-
-	uri, _ = url.Parse(revokeURL)
-
-	parameters := url.Values{}
-	parameters.Add("token", t.AccessToken)
-	uri.RawQuery = parameters.Encode()
-
-	http.Post(uri.String(), "", nil)
-
-	sc.base.RedisClient.Del("twitchAuth")
-
-	w.WriteHeader(http.StatusNoContent)
-}
 
 func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
 	client := http.Client{}
@@ -170,7 +87,7 @@ func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ 
 
 	json.Unmarshal(b, &t)
 
-	title := sc.twitchParseTemplate()
+	title := sc.twitchExecuteTemplate()
 	game := sc.base.CurrentRun.GameInfo.GameName
 
 	uri, err := url.Parse(updateChannelURL + "/" + t.ChannelID)
@@ -214,48 +131,85 @@ func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ 
 	}
 }
 
-func (sc Controller) twitchParseTemplate() string {
+func (sc Controller) TwitchExecuteTemplate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	res := sc.twitchExecuteTemplate()
+	if res == "ERROR" {
+		sc.base.Response("", res, http.StatusInternalServerError, w)
+
+	}
+	sc.base.Response(res, "", http.StatusOK, w)
+}
+
+func (sc Controller) twitchExecuteTemplate() string {
 	currentRun := sc.base.CurrentRun
 	c := twitchTitleOptions{currentRun.GameInfo.GameName, currentRun.Players, currentRun.RunInfo.Platform, currentRun.RunInfo.Estimate, currentRun.RunInfo.Category}
 
-	templateString, err := sc.base.RedisClient.Get("twitchTemplate").Result()
+	res, err := sc.base.RedisClient.Get("twitchSettings").Bytes()
 	if err != nil {
-		sc.base.LogError("getting the template string from redis. Make sure the Twitch title template is set.", err, true)
+		if err == redis.Nil {
+			return "ERROR"
+		}
+		sc.base.LogError("error while getting twitch settings from redis", err, true)
 		return "ERROR"
 	}
 
-	tmpl, err := template.New("run").Parse(templateString)
+	ts := TwitchSettings{}
 
-	var res bytes.Buffer
-	err = tmpl.Execute(&res, c)
+	json.Unmarshal(res, &ts)
+
+	tmpl, err := template.New("run").Parse(ts.TemplateString)
+
+	var execTemplate bytes.Buffer
+	err = tmpl.Execute(&execTemplate, c)
 	if err != nil {
 		sc.base.LogError("while executing template", err, true)
 		return "ERROR"
 	}
 
-	return res.String()
+	return execTemplate.String()
 }
 
-type twitchTitleOptions struct {
-	Game     string
-	Runner   []models.PlayerInfo
-	Platform string
-	Estimate string
-	Category string
+type TwitchSettings struct {
+	TitleUpdate    bool   `json:"titleUpdate"`
+	GameUpdate     bool   `json:"gameUpdate"`
+	Viewers        bool   `json:"viewers"`
+	TemplateString string `json:"templateString"`
 }
 
-// TwitchTitleTemplate will set the redis entry for the twitch title template
-func (sc Controller) TwitchTitleTemplate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	templateString := struct {
-		TemplateString string `json:"template"`
-	}{}
-
-	json.NewDecoder(r.Body).Decode(&templateString)
-
-	err := sc.base.RedisClient.Set("twitchTemplate", templateString.TemplateString, 0).Err()
+func (sc Controller) TwitchSetSettings(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var ts TwitchSettings
+	err := json.NewDecoder(r.Body).Decode(&ts)
 	if err != nil {
-		sc.base.LogError("while saving the template", err, true)
+		sc.base.LogError("while decoding the body for setting save", err, true)
+		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	ser, err := json.Marshal(ts)
+	if err != nil {
+		sc.base.LogError("while marshal the body for setting save", err, true)
+		return
+	}
+
+	sc.base.RedisClient.Set("twitchSettings", ser, 0)
+
+	w.Header().Add("Content-Type", "application/json")
+
+	w.Write(ser)
+}
+
+func (sc Controller) TwitchGetSettings(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var res []byte
+
+	res, err := sc.base.RedisClient.Get("twitchSettings").Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			sc.base.Response("", "no settings have been saved", 404, w)
+			return
+		}
+		sc.base.LogError("error while getting twitch settings from redis", err, true)
+		return
+	}
+	w.Header().Add("Content-Type", "application/json")
+
+	w.Write(res)
 }

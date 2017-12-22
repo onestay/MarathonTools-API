@@ -6,11 +6,12 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/onestay/MarathonTools-API/api/models"
-	"gopkg.in/mgo.v2/bson"
-
+	"github.com/go-redis/redis"
 	"github.com/julienschmidt/httprouter"
 	"github.com/onestay/MarathonTools-API/api/common"
+	"github.com/onestay/MarathonTools-API/api/models"
+	"github.com/onestay/MarathonTools-API/api/routes/social"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // RunController contains all the methods needed to control runs
@@ -215,6 +216,36 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 		}
 		rc.base.RunIndex--
 	}
+
+	go func() {
+		var res []byte
+		var ts social.TwitchSettings
+		res, err := rc.base.RedisClient.Get("twitchSettings").Bytes()
+		if err != nil {
+			if err == redis.Nil {
+				return
+			}
+			rc.base.LogError("error while getting twitch settings from redis", err, true)
+			return
+		}
+
+		json.Unmarshal(res, &ts)
+
+		if ts.TitleUpdate {
+			c := http.Client{}
+
+			req, _ := http.NewRequest("PUT", "http://localhost:3000/social/twitch/update", nil)
+
+			result, err := c.Do(req)
+			if err != nil {
+				rc.base.LogError("while updating run on twitch", err, true)
+				return
+			} else if result.StatusCode != 200 {
+				rc.base.LogError("non 200 status code returned from", err, true)
+			}
+		}
+
+	}()
 
 	rc.base.UpdateActiveRuns()
 

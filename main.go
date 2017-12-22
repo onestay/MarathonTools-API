@@ -68,8 +68,10 @@ func startHTTPServer() {
 	r.GET("/social/twitch/verify", socialController.TwitchCheckForAuth)
 	r.POST("/social/twitch/auth", socialController.TwitchGetToken)
 	r.DELETE("/social/twitch/token", socialController.TwitchDeleteToken)
-	r.POST("/social/twitch/titletemplate", socialController.TwitchTitleTemplate)
+	r.GET("/social/twitch/executetemplate", socialController.TwitchExecuteTemplate)
 	r.PUT("/social/twitch/update", socialController.TwitchUpdateInfo)
+	r.PUT("/social/twitch/settings", socialController.TwitchSetSettings)
+	r.GET("/social/twitch/settings", socialController.TwitchGetSettings)
 
 	r.GET("/social/twitter/oauthurl", socialController.TwitterOAuthURL)
 
@@ -124,6 +126,6 @@ func importRuns() {
 	log.Printf("imported %v runs", len(runs))
 	err = os.Rename("./config/runs.json", "./config/runs_imported.json")
 	if err != nil {
-		log.Println("error renaming runs file")
+		log.Println("error renaming runs file. Please rename manually so runs aren't imported on restart")
 	}
 }
