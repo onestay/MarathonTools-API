@@ -1,6 +1,8 @@
 package common
 
 import (
+	"net/http"
+
 	"github.com/go-redis/redis"
 	mgo "gopkg.in/mgo.v2"
 
@@ -20,6 +22,7 @@ type Controller struct {
 	RedisClient *redis.Client
 	TimerState  TimerState
 	TimerTime   float64
+	HttpClient  http.Client
 }
 
 type httpResponse struct {
@@ -58,6 +61,7 @@ func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client)
 		RedisClient: rc,
 		TimerState:  2,
 		TimerTime:   0,
+		HttpClient:  http.Client{},
 	}
 
 	c.UpdateActiveRuns()

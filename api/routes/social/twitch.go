@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -40,12 +42,15 @@ type twitchTitleOptions struct {
 	Category string
 }
 
+// this will mostly use the old twitch api since most of the endpoints I need aren't available in the new one
+// I will try to use the new one as much as possible tho
 const (
 	authorizeURL     = "https://api.twitch.tv/kraken/oauth2/authorize"
 	tokenURL         = "https://api.twitch.tv/kraken/oauth2/token"
 	revokeURL        = "https://api.twitch.tv/kraken/oauth2/revoke"
 	channelURL       = "https://api.twitch.tv/kraken/channel"
 	updateChannelURL = "https://api.twitch.tv/kraken/channels"
+	getStreamURL     = "https://api.twitch.tv/helix/streams"
 )
 
 func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
@@ -95,40 +100,64 @@ func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ 
 		sc.base.LogError("parsing channel url", err, true)
 		return
 	}
+
 	type channel struct {
-		Game   string `json:"game"`
-		Status string `json:"status"`
+		Game   string `json:"game,omitempty"`
+		Status string `json:"status,omitempty"`
 	}
 
 	type Payload struct {
 		Channel channel `json:"channel,omitempty"`
 	}
-
-	ch := channel{game, title}
+	var ch channel
+	updateCode := r.URL.Query().Get("update")
+	if updateCode == "game" {
+		ch = channel{
+			Game: game,
+		}
+	} else if updateCode == "title" {
+		ch = channel{
+			Status: title,
+		}
+	} else {
+		ch = channel{
+			Status: title,
+			Game:   game,
+		}
+	}
 	payload := Payload{ch}
 
 	result, err := json.Marshal(payload)
 	if err != nil {
 		sc.base.LogError("Could not marshall json for twitch update", err, true)
+		return
 	}
 
 	req, err := http.NewRequest("PUT", uri.String(), bytes.NewReader(result))
 	if err != nil {
 		sc.base.LogError("creating request to update twitch info", err, true)
+		return
 	}
 
 	req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
 	req.Header.Add("Authorization", "OAuth "+t.AccessToken)
+	req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
 	req.Header.Add("Content-Type", "application/json")
 
 	res, err := client.Do(req)
 	if err != nil {
 		sc.base.LogError("sending request to update game info", err, true)
+		return
 	}
 
 	if res.StatusCode != 200 {
 		sc.base.LogError("twitch api response was not 200", errors.New(res.Status), true)
+		return
 	}
+
+	wubba, _ := ioutil.ReadAll(res.Body)
+
+	fmt.Println(string(wubba))
 }
 
 func (sc Controller) TwitchExecuteTemplate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -169,6 +198,7 @@ func (sc Controller) twitchExecuteTemplate() string {
 	return execTemplate.String()
 }
 
+// TwitchSettings defines the settings for twitch integration
 type TwitchSettings struct {
 	TitleUpdate    bool   `json:"titleUpdate"`
 	GameUpdate     bool   `json:"gameUpdate"`
@@ -176,6 +206,7 @@ type TwitchSettings struct {
 	TemplateString string `json:"templateString"`
 }
 
+// TwitchSetSettings sets the settings
 func (sc Controller) TwitchSetSettings(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var ts TwitchSettings
 	err := json.NewDecoder(r.Body).Decode(&ts)
@@ -190,6 +221,13 @@ func (sc Controller) TwitchSetSettings(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
+	go func() {
+		if ts.Viewers {
+			sc.twitchStartViewerUpdates()
+		} else {
+			sc.twitchStopViewerUpdates()
+		}
+	}()
 	sc.base.RedisClient.Set("twitchSettings", ser, 0)
 
 	w.Header().Add("Content-Type", "application/json")
@@ -197,6 +235,7 @@ func (sc Controller) TwitchSetSettings(w http.ResponseWriter, r *http.Request, p
 	w.Write(ser)
 }
 
+// TwitchGetSettings returns settings
 func (sc Controller) TwitchGetSettings(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var res []byte
 
@@ -212,4 +251,78 @@ func (sc Controller) TwitchGetSettings(w http.ResponseWriter, r *http.Request, p
 	w.Header().Add("Content-Type", "application/json")
 
 	w.Write(res)
+}
+
+var viewerUpdateTicker *time.Ticker
+
+func (sc Controller) twitchStartViewerUpdates() {
+	viewerUpdateTicker = time.NewTicker(1 * time.Minute)
+
+	data := struct {
+		DataType string `json:"dataType"`
+		Viewers  int    `json:"viewers"`
+	}{"twitchViewerUpdate", sc.getTwitchViewers()}
+
+	d, _ := json.Marshal(data)
+
+	sc.base.WS.Broadcast <- d
+
+	go func() {
+		for {
+			select {
+			case <-viewerUpdateTicker.C:
+				data := struct {
+					DataType string `json:"dataType"`
+					Viewers  int    `json:"viewers"`
+				}{"twitchViewerUpdate", sc.getTwitchViewers()}
+
+				d, _ := json.Marshal(data)
+
+				sc.base.WS.Broadcast <- d
+			}
+		}
+	}()
+}
+
+func (sc Controller) twitchStopViewerUpdates() {
+	if viewerUpdateTicker != nil {
+		go func() {
+			data := struct {
+				DataType string `json:"dataType"`
+				Viewers  int    `json:"viewers"`
+			}{"twitchViewerUpdate", -1}
+
+			d, _ := json.Marshal(data)
+
+			sc.base.WS.Broadcast <- d
+		}()
+		viewerUpdateTicker.Stop()
+
+		viewerUpdateTicker = nil
+	}
+}
+
+func (sc Controller) getTwitchViewers() int {
+	b, _ := sc.base.RedisClient.Get("twitchAuth").Bytes()
+	t := TwitchResponse{}
+
+	json.Unmarshal(b, &t)
+
+	req, _ := http.NewRequest("GET", getStreamURL+"?user_id="+t.ChannelID, nil)
+	req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
+
+	res, _ := sc.base.HttpClient.Do(req)
+
+	twitchRes := struct {
+		Data []struct {
+			ViewerCount int `json:"viewer_count"`
+		} `json:"data"`
+	}{}
+
+	json.NewDecoder(res.Body).Decode(&twitchRes)
+	if len(twitchRes.Data) != 0 {
+		return twitchRes.Data[0].ViewerCount
+	}
+	return -1
+
 }

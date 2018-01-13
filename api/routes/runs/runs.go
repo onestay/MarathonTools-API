@@ -59,7 +59,7 @@ func (rc RunController) GetRuns(w http.ResponseWriter, r *http.Request, _ httpro
 	json.NewEncoder(w).Encode(runs)
 }
 
-// GetRun will return a single run based on objectid
+// GetRun will return a run
 func (rc RunController) GetRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	if !bson.IsObjectIdHex(runID) {
@@ -197,6 +197,7 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 		rc.base.Response("", "can't switch runs while timer is running", 400, w)
 		return
 	}
+
 	meth := "next"
 	if r.URL.Query().Get("m") == "prev" {
 		meth = "prev"
@@ -231,12 +232,20 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 
 		json.Unmarshal(res, &ts)
 
-		if ts.TitleUpdate {
-			c := http.Client{}
+		if ts.TitleUpdate || ts.GameUpdate {
+			var query string
 
-			req, _ := http.NewRequest("PUT", "http://localhost:3000/social/twitch/update", nil)
+			if ts.GameUpdate && !ts.TitleUpdate {
+				query = "?update=game"
+			} else if ts.TitleUpdate && !ts.GameUpdate {
+				query = "?update=title"
+			} else {
+				query = ""
+			}
 
-			result, err := c.Do(req)
+			req, _ := http.NewRequest("PUT", "http://localhost:3000/social/twitch/update"+query, nil)
+
+			result, err := rc.base.HttpClient.Do(req)
 			if err != nil {
 				rc.base.LogError("while updating run on twitch", err, true)
 				return
