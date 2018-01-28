@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/onestay/MarathonTools-API/api/routes/donations"
+
+	"github.com/onestay/MarathonTools-API/api/donationProviders"
 	"github.com/onestay/MarathonTools-API/api/models"
 	"github.com/onestay/MarathonTools-API/api/routes/timer"
 
@@ -44,12 +47,25 @@ func startHTTPServer() {
 	socialController := social.NewSocialController("od8tmxq45nmgpoenjlhxfqywwfxajb", "gg6zk2imvttvur33aiolvl695jsdzl", baseController, "k51MJQ1GlZIerZPIr9fDG8dw9", "W0BnR6zWyHkttBAlbWzVuvFsxqT5Sletf8NjwjGNzhC3U708ED")
 	timeController := timer.NewTimeController(baseController, 500)
 	runController := runs.NewRunController(baseController)
+
+	srDonationProvider, err := donationProviders.NewSRComDonationProvider("esagermany_2017")
+	if err != nil {
+		panic(err)
+	}
+
+	donationController := donations.NewDonationController(baseController, srDonationProvider)
 	go hub.Run()
 
 	r.GET("/ws", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		ws.ServeWs(hub, w, r, baseController.SendInitialData())
 	})
 
+	// routes for donation endpoint
+	r.GET("/donations/total", donationController.GetTotal)
+	r.GET("/donations/all", donationController.GetAll)
+	r.GET("/donations/total/amount", donationController.GetTotalDonations)
+	r.GET("/donations/total/update/start", donationController.StartTotalUpdate)
+	r.GET("/donations/total/update/stop", donationController.StopTotalUpdate)
 	// routes for run endpoint
 	r.GET("/run/get/all", runController.GetRuns)
 	r.GET("/run/get/single/:id", runController.GetRun)

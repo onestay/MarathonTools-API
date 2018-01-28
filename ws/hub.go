@@ -1,5 +1,7 @@
 package ws
 
+import "log"
+
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
@@ -28,6 +30,7 @@ func NewHub() *Hub {
 
 // Run starts the hub
 func (h *Hub) Run() {
+	log.Println("Websocket running")
 	for {
 		select {
 		case client := <-h.register:

@@ -110,3 +110,16 @@ func (c Controller) WSReportError(e string) {
 
 	c.WS.Broadcast <- d
 }
+
+func (c Controller) WSDonationUpdate(oldAmount, newAmount float64) {
+	data := struct {
+		DataType   string  `json:"dataType"`
+		OldAmount  float64 `json:"old"`
+		NewAmount  float64 `json:"new"`
+		Difference float64 `json:"difference"`
+	}{"donationUpdate", oldAmount, newAmount, newAmount - oldAmount}
+
+	d, _ := json.Marshal(data)
+
+	c.WS.Broadcast <- d
+}
