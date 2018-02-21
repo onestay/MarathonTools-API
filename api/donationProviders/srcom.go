@@ -37,6 +37,13 @@ type srComDonation struct {
 			Rel string `json:"rel"`
 			URI string `json:"uri"`
 		} `json:"links"`
+		User struct {
+			Data struct {
+				Names struct {
+					International string `json:"international"`
+				} `json:"names"`
+			} `json:"data"`
+		} `json:"user"`
 	} `json:"data"`
 	Pagination struct {
 		Offset int `json:"offset"`
@@ -158,7 +165,7 @@ func (sr *SRComDonationProvider) GetDonations() ([]donations.Donation, error) {
 	var don srComDonation
 	var max, size int
 
-	res, err := http.Get(sr.links["list"] + "?max=" + limit)
+	res, err := http.Get(sr.links["list"] + "?max=" + limit + "&embed=user")
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +179,7 @@ func (sr *SRComDonationProvider) GetDonations() ([]donations.Donation, error) {
 	fmt.Println(size, max)
 
 	for size >= max {
-		res, err := http.Get(sr.links["list"] + "?max=" + limit + "&offset=" + strconv.Itoa(offset))
+		res, err := http.Get(sr.links["list"] + "?max=" + limit + "&offset=" + strconv.Itoa(offset) + "&embed=user")
 		if err != nil {
 			return nil, err
 		}
@@ -194,6 +201,7 @@ func (sr *SRComDonationProvider) GetDonations() ([]donations.Donation, error) {
 		ds[i].Created = d.Created
 		ds[i].Message = d.Comment
 		ds[i].Name = d.ID
+		ds[i].User = d.User.Data.Names.International
 	}
 
 	return ds, nil

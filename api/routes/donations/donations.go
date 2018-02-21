@@ -2,7 +2,6 @@ package donations
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,6 +28,7 @@ type Donation struct {
 	Message string    `json:"message,omitempty"`
 	Name    string    `json:"name,omitempty"`
 	Created time.Time `json:"created,omitempty"`
+	User    string    `json:"user,omitempty"`
 }
 
 // DonationController represents the donation controller
@@ -103,7 +103,7 @@ func (d *DonationController) GetTotalDonations(w http.ResponseWriter, r *http.Re
 
 func (d *DonationController) StartTotalUpdate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if d.t != nil {
-		w.Write([]byte("Already running"))
+		d.base.Response("", "already running", 400, w)
 		return
 	}
 	interval := 5
@@ -128,7 +128,11 @@ func (d *DonationController) StartTotalUpdate(w http.ResponseWriter, r *http.Req
 }
 
 func (d *DonationController) StopTotalUpdate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if d.t == nil {
+		d.base.Response("", "not running", 400, w)
+		return
+	}
 	d.t.Stop()
 	d.t = nil
-	fmt.Fprintln(w, "done stop")
+	w.WriteHeader(http.StatusNoContent)
 }
