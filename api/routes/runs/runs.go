@@ -26,7 +26,7 @@ func NewRunController(b *common.Controller) *RunController {
 	}
 }
 
-// AddRun will add a run to the database
+// AddRun will add a run to the database and return the ID of the new run
 func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	run := models.Run{}
 	json.NewDecoder(r.Body).Decode(&run)
@@ -39,7 +39,7 @@ func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	rc.base.Response(run.RunID.Hex(), "", http.StatusOK, w)
 
 	rc.base.WSRunsOnlyUpdate()
 }
@@ -112,7 +112,7 @@ func (rc RunController) DeleteRun(w http.ResponseWriter, r *http.Request, ps htt
 
 	w.WriteHeader(http.StatusNoContent)
 
-	rc.base.WSRunsOnlyUpdate()
+	rc.base.WSRunUpdate()
 }
 
 // UpdateRun will update the run with the id provided and the request body

@@ -2,6 +2,7 @@ package social
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -51,4 +52,23 @@ func (sc Controller) TwitterCheckForAuth(w http.ResponseWriter, r *http.Request,
 func (sc Controller) TwitterDeleteToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	sc.base.RedisClient.Del("twitterAuth")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (sc Controller) TwitterSendUpdate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	res, err := sc.base.RedisClient.Get("twitterAuth").Bytes()
+	if err != nil {
+		sc.base.LogError("Error getting twitter auth from redis", err, true)
+	}
+
+	t := oauth1.Token{}
+
+	json.Unmarshal(res, &t)
+
+	c := sc.twitterInfo.Client(oauth1.NoContext, &t)
+	httpRes, err := c.Post("https://api.twitter.com/1.1/statuses/update.json?status=test", "", nil)
+	if err != nil {
+		sc.base.LogError("Error sending tweet", err, true)
+	}
+
+	fmt.Fprint(w, httpRes.Status)
 }

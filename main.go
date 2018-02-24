@@ -90,6 +90,13 @@ func startHTTPServer() {
 	r.GET("/social/twitch/settings", socialController.TwitchGetSettings)
 
 	r.GET("/social/twitter/oauthurl", socialController.TwitterOAuthURL)
+	r.GET("/social/twitter/verify", socialController.TwitterCheckForAuth)
+	r.POST("/social/twitter/auth", socialController.TwitterCallback)
+	r.DELETE("/social/twitter/token", socialController.TwitterDeleteToken)
+	r.POST("/social/twitter/update", socialController.TwitterSendUpdate)
+	r.POST("/social/twitter/template", socialController.TwitterAddTemplate)
+	r.GET("/social/twitter/template", socialController.TwitterGetTemplates)
+	r.DELETE("/social/twitter/template/:index", socialController.TwitterDeleteTemplate)
 
 	// timer stuff
 	r.POST("/timer/start", timeController.TimerStart)
