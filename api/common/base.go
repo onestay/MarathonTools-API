@@ -22,7 +22,9 @@ type Controller struct {
 	RedisClient *redis.Client
 	TimerState  TimerState
 	TimerTime   float64
-	HttpClient  http.Client
+	HTTPClient  http.Client
+	// ComChan is used to communicate with the socialController on twitter and twitch updates
+	ComChan chan int
 }
 
 type httpResponse struct {
@@ -61,7 +63,8 @@ func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client)
 		RedisClient: rc,
 		TimerState:  2,
 		TimerTime:   0,
-		HttpClient:  http.Client{},
+		HTTPClient:  http.Client{},
+		ComChan:     make(chan int, 1),
 	}
 
 	c.UpdateActiveRuns()

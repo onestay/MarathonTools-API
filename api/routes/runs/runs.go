@@ -218,6 +218,16 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 		rc.base.RunIndex--
 	}
 
+	go rc.checkForUpdate()
+
+	rc.base.UpdateActiveRuns()
+
+	w.WriteHeader(http.StatusNoContent)
+
+	rc.base.WSCurrentUpdate()
+}
+
+func (rc *RunController) checkForUpdate() {
 	go func() {
 		var res []byte
 		var ts social.TwitchSettings
@@ -233,32 +243,17 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 		json.Unmarshal(res, &ts)
 
 		if ts.TitleUpdate || ts.GameUpdate {
-			var query string
-
-			if ts.GameUpdate && !ts.TitleUpdate {
-				query = "?update=game"
-			} else if ts.TitleUpdate && !ts.GameUpdate {
-				query = "?update=title"
-			} else {
-				query = ""
-			}
-
-			req, _ := http.NewRequest("PUT", "http://localhost:3000/social/twitch/update"+query, nil)
-
-			result, err := rc.base.HttpClient.Do(req)
-			if err != nil {
-				rc.base.LogError("while updating run on twitch", err, true)
-				return
-			} else if result.StatusCode != 200 {
-				rc.base.LogError("non 200 status code returned from", err, true)
-			}
+			rc.base.ComChan <- 1
 		}
 
 	}()
 
-	rc.base.UpdateActiveRuns()
-
-	w.WriteHeader(http.StatusNoContent)
-
-	rc.base.WSCurrentUpdate()
+	go func() {
+		res, err := rc.base.RedisClient.Get("twitterSettings").Bytes()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println(string(res))
+	}()
 }

@@ -80,13 +80,12 @@ func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
 	res <- true
 }
 
-// TwitchUpdateInfo will update the game and title for the connected twitch account
-func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) twitchUpdateInfo() error {
 	client := http.Client{}
 
 	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
 	if err != nil {
-		sc.base.LogError("getting twitch auth info from redis", err, true)
+		return err
 	}
 	t := TwitchResponse{}
 
@@ -97,8 +96,7 @@ func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ 
 
 	uri, err := url.Parse(updateChannelURL + "/" + t.ChannelID)
 	if err != nil {
-		sc.base.LogError("parsing channel url", err, true)
-		return
+		return err
 	}
 
 	type channel struct {
@@ -109,34 +107,41 @@ func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ 
 	type Payload struct {
 		Channel channel `json:"channel,omitempty"`
 	}
+
 	var ch channel
-	updateCode := r.URL.Query().Get("update")
-	if updateCode == "game" {
-		ch = channel{
-			Game: game,
-		}
-	} else if updateCode == "title" {
-		ch = channel{
-			Status: title,
-		}
-	} else {
+
+	ts, err := sc.twitchGetSettings()
+	if err != nil {
+		return err
+	}
+
+	if ts.GameUpdate && ts.TitleUpdate {
 		ch = channel{
 			Status: title,
 			Game:   game,
 		}
+	} else if ts.GameUpdate && !ts.TitleUpdate {
+		ch = channel{
+			Game: game,
+		}
+	} else if ts.TitleUpdate && !ts.GameUpdate {
+		ch = channel{
+			Status: title,
+		}
+	} else {
+		// in that case neither run nor title update are enabled.
+		return nil
 	}
 	payload := Payload{ch}
 
 	result, err := json.Marshal(payload)
 	if err != nil {
-		sc.base.LogError("Could not marshall json for twitch update", err, true)
-		return
+		return err
 	}
 
 	req, err := http.NewRequest("PUT", uri.String(), bytes.NewReader(result))
 	if err != nil {
-		sc.base.LogError("creating request to update twitch info", err, true)
-		return
+		return err
 	}
 
 	req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
@@ -146,20 +151,30 @@ func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ 
 
 	res, err := client.Do(req)
 	if err != nil {
-		sc.base.LogError("sending request to update game info", err, true)
-		return
+		return err
 	}
 
 	if res.StatusCode != 200 {
-		sc.base.LogError("twitch api response was not 200", errors.New(res.Status), true)
-		return
+		return err
 	}
 
 	wubba, _ := ioutil.ReadAll(res.Body)
 
 	fmt.Println(string(wubba))
+	return nil
 }
 
+// TwitchUpdateInfo will update the game and title for the connected twitch account
+func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	err := sc.twitchUpdateInfo()
+	if err != nil {
+		sc.base.Response("", "error sending twitter update", http.StatusInternalServerError, w)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// TwitchExecuteTemplate will execute the template string given via config
 func (sc Controller) TwitchExecuteTemplate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res := sc.twitchExecuteTemplate()
 	if res == "ERROR" {
@@ -253,6 +268,22 @@ func (sc Controller) TwitchGetSettings(w http.ResponseWriter, r *http.Request, p
 	w.Write(res)
 }
 
+func (sc Controller) twitchGetSettings() (*TwitchSettings, error) {
+	var res []byte
+	var ts TwitchSettings
+	res, err := sc.base.RedisClient.Get("twitchSettings").Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, errors.New("no Twitch settings saved")
+		}
+		return nil, err
+	}
+
+	json.Unmarshal(res, &ts)
+
+	return &ts, nil
+}
+
 var viewerUpdateTicker *time.Ticker
 
 func (sc Controller) twitchStartViewerUpdates() {
@@ -311,7 +342,7 @@ func (sc Controller) getTwitchViewers() int {
 	req, _ := http.NewRequest("GET", getStreamURL+"?user_id="+t.ChannelID, nil)
 	req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
 
-	res, _ := sc.base.HttpClient.Do(req)
+	res, _ := sc.base.HTTPClient.Do(req)
 
 	twitchRes := struct {
 		Data []struct {

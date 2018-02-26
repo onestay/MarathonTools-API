@@ -1,9 +1,13 @@
 package social
 
-import "github.com/onestay/MarathonTools-API/api/common"
+import (
+	"fmt"
 
-import "github.com/dghubble/oauth1"
-import "github.com/dghubble/oauth1/twitter"
+	"github.com/onestay/MarathonTools-API/api/common"
+
+	"github.com/dghubble/oauth1"
+	"github.com/dghubble/oauth1/twitter"
+)
 
 // Controller holds all the info and methods
 type Controller struct {
@@ -42,9 +46,32 @@ func NewSocialController(twitchClientID, twitchClientSecret string, b *common.Co
 		Endpoint:       twitter.AuthorizeEndpoint,
 	}
 
-	return &Controller{
+	c := Controller{
 		twitchInfo:  t,
 		base:        b,
 		twitterInfo: tw,
+	}
+
+	go c.comReciever()
+
+	return &c
+}
+
+func (sc Controller) comReciever() {
+	for {
+		i := <-sc.base.ComChan
+		if i == 1 {
+			err := sc.twitchUpdateInfo()
+			if err != nil {
+				sc.base.LogError("while updating twitter info", err, true)
+			}
+		} else if i == 2 {
+			err := sc.twitterSendUpdate()
+			if err != nil {
+				sc.base.LogError("while sending tweet update", err, true)
+			}
+		} else if i == 0 {
+			fmt.Println(i)
+		}
 	}
 }

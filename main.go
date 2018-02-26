@@ -97,6 +97,7 @@ func startHTTPServer() {
 	r.POST("/social/twitter/template", socialController.TwitterAddTemplate)
 	r.GET("/social/twitter/template", socialController.TwitterGetTemplates)
 	r.DELETE("/social/twitter/template/:index", socialController.TwitterDeleteTemplate)
+	r.PUT("/social/twitter/settings", socialController.TwitterSetSettings)
 
 	// timer stuff
 	r.POST("/timer/start", timeController.TimerStart)
