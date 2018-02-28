@@ -8,6 +8,9 @@ services:
     command: bash -c "go get github.com/codegangsta/gin && gin -i"
     volumes:
       - .:/go/src/github.com/onestay/MarathonTools-API
+    depends_on:
+      - mongo
+      - redis
   mongo:
     image: mongo
     volumes:
