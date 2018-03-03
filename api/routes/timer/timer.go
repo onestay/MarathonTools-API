@@ -33,8 +33,9 @@ func (c *Controller) timerLoop() {
 	go func() {
 		for {
 			select {
-			case t := <-c.ticker.C:
-				difference := t.Sub(c.startTime).Seconds()
+			case <-c.ticker.C:
+				// difference := t.Sub(c.startTime).Seconds()
+				difference := time.Now().Sub(c.startTime).Seconds()
 				c.b.TimerTime = difference
 				c.b.WSTimeUpdate()
 			}
