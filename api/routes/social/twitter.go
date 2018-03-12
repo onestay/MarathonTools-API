@@ -111,5 +111,19 @@ func (sc Controller) TwitterSetSettings(w http.ResponseWriter, r *http.Request, 
 }
 
 func (sc Controller) TwitterGetSettings(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	res, err := sc.base.RedisClient.Get("twitterSettings").Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		sc.base.Response("", "error getting settings", http.StatusInternalServerError, w)
+	}
+	b, _ := strconv.ParseBool(string(res))
+	s := struct {
+		SendUpdates bool `json:"sendUpdates"`
+	}{b}
 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s)
 }

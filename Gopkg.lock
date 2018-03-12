@@ -3,13 +3,23 @@
 
 [[projects]]
   name = "github.com/dghubble/oauth1"
-  packages = [".","twitter"]
+  packages = [
+    ".",
+    "twitter"
+  ]
   revision = "70562a5920ad9b6ff03ef697c0f90ae569abbd2b"
   version = "v0.4.0"
 
 [[projects]]
   name = "github.com/go-redis/redis"
-  packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
+  packages = [
+    ".",
+    "internal",
+    "internal/consistenthash",
+    "internal/hashtag",
+    "internal/pool",
+    "internal/proto"
+  ]
   revision = "8e6b51ec3a92ec095dcbd2439c7a3eec6b6cb586"
   version = "v6.7.1"
 
@@ -34,12 +44,18 @@
 [[projects]]
   branch = "v2"
   name = "gopkg.in/mgo.v2"
-  packages = [".","bson","internal/json","internal/sasl","internal/scram"]
+  packages = [
+    ".",
+    "bson",
+    "internal/json",
+    "internal/sasl",
+    "internal/scram"
+  ]
   revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fcfef62254ac1cb6451120e68227cced92d64d2aea04aee5fc24d0251a8b2539"
+  inputs-digest = "e07fddec55df89a6fb06cdf74a078bbe208c715c6cbf6d8539606c074b278af3"
   solver-name = "gps-cdcl"
   solver-version = 1

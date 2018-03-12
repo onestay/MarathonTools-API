@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-redis/redis"
 	"github.com/julienschmidt/httprouter"
@@ -251,9 +252,15 @@ func (rc *RunController) checkForUpdate() {
 	go func() {
 		res, err := rc.base.RedisClient.Get("twitterSettings").Bytes()
 		if err != nil {
-			fmt.Println(err)
+			if err == redis.Nil {
+				return
+			}
+			rc.base.LogError("error while getting settings from twitch", err, true)
 			return
 		}
-		fmt.Println(string(res))
+		if b, err := strconv.ParseBool(string(res)); err != nil && b == true {
+			rc.base.ComChan <- 2
+			rc.base.ComChan <- 0
+		}
 	}()
 }

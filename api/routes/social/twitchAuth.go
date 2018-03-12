@@ -107,3 +107,24 @@ func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// func (sc Controller) twitchRefreshToken() error {
+// 	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	t := TwitchResponse{}
+
+// 	json.Unmarshal(b, &t)
+
+// 	var uri *url.URL
+// 	uri, _ = url.Parse(refreshTokenURL)
+
+// 	parameters := url.Values{}
+// 	parameters.Add("client_id", sc.twitchInfo.ClientID)
+// 	parameters.Add("client_secret", sc.twitchInfo.ClientSecret)
+// 	parameters.Add("grant_type", "refresh_token")
+// 	parameters.Add("refresh_token", t.RefreshToken)
+// 	uri.RawQuery = parameters.Encode()
+// 	sc.base.HTTPClient.Get(uri.String())
+// }

@@ -44,7 +44,7 @@ func startHTTPServer() {
 	r := httprouter.New()
 	hub := ws.NewHub()
 	baseController := common.NewController(hub, mgs, 0, redisClient)
-	socialController := social.NewSocialController("od8tmxq45nmgpoenjlhxfqywwfxajb", "gg6zk2imvttvur33aiolvl695jsdzl", baseController, "k51MJQ1GlZIerZPIr9fDG8dw9", "W0BnR6zWyHkttBAlbWzVuvFsxqT5Sletf8NjwjGNzhC3U708ED")
+	socialController := social.NewSocialController("od8tmxq45nmgpoenjlhxfqywwfxajb", "gg6zk2imvttvur33aiolvl695jsdzl", "http://localhost:4000/#/dashboard/config/social/twitch", "k51MJQ1GlZIerZPIr9fDG8dw9", "W0BnR6zWyHkttBAlbWzVuvFsxqT5Sletf8NjwjGNzhC3U708ED", "http://localhost:4000/#/dashboard/config/social/twitter", baseController)
 	timeController := timer.NewTimeController(baseController, 500)
 	runController := runs.NewRunController(baseController)
 
@@ -98,6 +98,7 @@ func startHTTPServer() {
 	r.GET("/social/twitter/template", socialController.TwitterGetTemplates)
 	r.DELETE("/social/twitter/template/:index", socialController.TwitterDeleteTemplate)
 	r.PUT("/social/twitter/settings", socialController.TwitterSetSettings)
+	r.GET("/social/twitter/settings", socialController.TwitterGetSettings)
 
 	// timer stuff
 	r.POST("/timer/start", timeController.TimerStart)

@@ -31,18 +31,18 @@ type twitterInfo struct {
 }
 
 // NewSocialController will return a new social controller
-func NewSocialController(twitchClientID, twitchClientSecret string, b *common.Controller, twitterKey, twitterSecret string) *Controller {
+func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback string, b *common.Controller) *Controller {
 	t := &twitchInfo{
 		ClientID:     twitchClientID,
 		ClientSecret: twitchClientSecret,
 		Scope:        "channel_editor channel_read",
-		RedirectURI:  "http://localhost:4000/#/dashboard/config/social/twitch",
+		RedirectURI:  twitchCallback,
 	}
 
 	tw := &oauth1.Config{
 		ConsumerKey:    twitterKey,
 		ConsumerSecret: twitterSecret,
-		CallbackURL:    "http://localhost:4000/#/dashboard/config/social/twitter",
+		CallbackURL:    twitterCallback,
 		Endpoint:       twitter.AuthorizeEndpoint,
 	}
 

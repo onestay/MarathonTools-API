@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -51,6 +49,7 @@ const (
 	channelURL       = "https://api.twitch.tv/kraken/channel"
 	updateChannelURL = "https://api.twitch.tv/kraken/channels"
 	getStreamURL     = "https://api.twitch.tv/helix/streams"
+	refreshTokenURL  = "https://id.twitch.tv/oauth2/token"
 )
 
 func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
@@ -65,9 +64,29 @@ func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
 	req.Header.Add("Authorization", "OAuth "+t.AccessToken)
 	req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
 
-	resp, err := client.Do(req)
+	var resp *http.Response
+
+	resp, err = client.Do(req)
 	if err != nil {
 		log.Printf("Error doing request. Err: %v", err)
+	}
+
+	if resp.StatusCode == 400 {
+		//err := sc.twitchRefreshToken()
+		if err != nil {
+			sc.base.LogError("while trying to get refresh token", err, true)
+			return
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			sc.base.LogError("couldn't get channel id even after successfull refresh token refresh", err, true)
+			return
+		}
+
+		if resp.StatusCode == 400 {
+			sc.base.LogError("couldn't get channel id even after successfull refresh token refresh. Bad auth", err, true)
+			return
+		}
 	}
 
 	id := struct {
@@ -157,10 +176,6 @@ func (sc Controller) twitchUpdateInfo() error {
 	if res.StatusCode != 200 {
 		return err
 	}
-
-	wubba, _ := ioutil.ReadAll(res.Body)
-
-	fmt.Println(string(wubba))
 	return nil
 }
 
