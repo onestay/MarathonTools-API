@@ -1,133 +1,96 @@
-[
-	{
-		"gameInfo": {
-			"gameName": "Portal 2",
-			"releaseYear": 2011
-		},
-		"runInfo": {
-			"estimate": "00:30:00",
-			"category": "any%",
-			"platform": "PC"
-		},
-		"players": [
-			{
-				"displayName": "Onestay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			}
-		]
+[{
+	"gameInfo": {
+			"gameName": "Super Mario World",
+			"releaseYear": 1990
 	},
-	{
-		"gameInfo": {
-			"gameName": "Portal 3",
-			"releaseYear": 2011
-		},
-		"runInfo": {
-			"estimate": "00:30:00",
-			"category": "any%",
-			"platform": "PC"
-		},
-		"players": [
-			{
-				"displayName": "Onestay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			},
-			{
-				"displayName": "Twostay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			}
-		]
+	"runInfo": {
+			"estimate": "01:40:00",
+			"category": "95 Exits, No Cape",
+			"platform": "SNES"
 	},
-	{
-		"gameInfo": {
-			"gameName": "Portal 4",
-			"releaseYear": 2011
-		},
-		"runInfo": {
-			"estimate": "00:30:00",
-			"category": "any%",
-			"platform": "PC"
-		},
-		"players": [
+	"playerInfo": [
 			{
-				"displayName": "Onestay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			},
-			{
-				"displayName": "Twostay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			},
-			{
-				"displayName": "Threestay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
+					"displayName": "ChrillePan",
+					"country": "",
+					"twitterName": "",
+					"twitchName": "",
+					"youtubeName": "",
+					"timer": {
+							"finished": false,
+							"time": 0.0
+					}
 			}
-		]
+	]
+},
+{
+	"gameInfo": {
+			"gameName": "Hyrule Warriors",
+			"releaseYear": 2014
 	},
-	{
-		"gameInfo": {
-			"gameName": "Portal 5",
-			"releaseYear": 2011
-		},
-		"runInfo": {
-			"estimate": "00:30:00",
-			"category": "any%",
-			"platform": "PC"
-		},
-		"players": [
-			{
-				"displayName": "Onestay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			}
-		]
+	"runInfo": {
+			"estimate": "02:35:00",
+			"category": "NG+ Any%",
+			"platform": "WiiU"
 	},
-	{
-		"gameInfo": {
-			"gameName": "Portal 6",
-			"releaseYear": 2011
-		},
-		"runInfo": {
-			"estimate": "00:30:00",
-			"category": "any%",
-			"platform": "PC"
-		},
-		"players": [
+	"playerInfo": [
 			{
-				"displayName": "Onestay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			},
-			{
-				"displayName": "Twostay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			},
-			{
-				"displayName": "Threestay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
-			},
-			{
-				"displayName": "Fourstay",
-				"country": "de",
-				"twitterName": "@onest4y",
-				"twitchName": "onestay"
+					"displayName": "ArikiraSR",
+					"country": "",
+					"twitterName": "",
+					"twitchName": "",
+					"youtubeName": "",
+					"timer": {
+							"finished": false,
+							"time": 0.0
+					}
 			}
-		]
-	}
-]
+	]
+},
+{
+	"gameInfo": {
+			"gameName": "Little Nightmares",
+			"releaseYear": 2017
+	},
+	"runInfo": {
+			"estimate": "01:40:00",
+			"category": "Full Game (Base Game + DLCs)",
+			"platform": "PC"
+	},
+	"playerInfo": [
+			{
+					"displayName": "Weser",
+					"country": "",
+					"twitterName": "",
+					"twitchName": "",
+					"youtubeName": "",
+					"timer": {
+							"finished": false,
+							"time": 0.0
+					}
+			}
+	]
+},
+{
+	"gameInfo": {
+			"gameName": "Jak 3",
+			"releaseYear": 2004
+	},
+	"runInfo": {
+			"estimate": "00:30:00",
+			"category": "Any% Hero Mode",
+			"platform": "PS3/PS4"
+	},
+	"playerInfo": [
+			{
+					"displayName": "Boomer",
+					"country": "",
+					"twitterName": "",
+					"twitchName": "",
+					"youtubeName": "",
+					"timer": {
+							"finished": false,
+							"time": 0.0
+					}
+			}
+	]
+}]

@@ -28,7 +28,7 @@ func NewTimeController(b *common.Controller, refreshInterval int) *Controller {
 }
 
 func (c *Controller) timerLoop() {
-	c.ticker = time.NewTicker(100 * time.Millisecond)
+	c.ticker = time.NewTicker(300 * time.Millisecond)
 
 	go func() {
 		for {
