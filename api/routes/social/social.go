@@ -63,7 +63,7 @@ func (sc Controller) comReciever() {
 		if i == 1 {
 			err := sc.twitchUpdateInfo()
 			if err != nil {
-				sc.base.LogError("while updating twitter info", err, true)
+				sc.base.LogError("while updating twitch info", err, true)
 			}
 		} else if i == 2 {
 			err := sc.twitterSendUpdate()
