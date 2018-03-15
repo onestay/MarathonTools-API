@@ -104,6 +104,9 @@ func (sc Controller) twitchUpdateInfo() error {
 
 	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
 	if err != nil {
+		if err == redis.Nil {
+			return errors.New("twitch updates enabled but no login data saved")
+		}
 		return err
 	}
 	t := TwitchResponse{}
