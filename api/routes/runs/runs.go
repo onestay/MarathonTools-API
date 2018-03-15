@@ -219,9 +219,9 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 		rc.base.RunIndex--
 	}
 
-	go rc.checkForUpdate()
-
 	rc.base.UpdateActiveRuns()
+
+	go rc.checkForUpdate()
 
 	w.WriteHeader(http.StatusNoContent)
 
@@ -258,9 +258,8 @@ func (rc *RunController) checkForUpdate() {
 			rc.base.LogError("error while getting settings from twitch", err, true)
 			return
 		}
-		if b, err := strconv.ParseBool(string(res)); err != nil && b == true {
+		if b, err := strconv.ParseBool(string(res)); err == nil && b == true {
 			rc.base.ComChan <- 2
-			rc.base.ComChan <- 0
 		}
 	}()
 }
