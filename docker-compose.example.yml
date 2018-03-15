@@ -12,15 +12,15 @@ services:
       - mongo
       - redis
     environment:
-      - TWITCH_CLIENT_ID=od8tmxq45nmgpoenjlhxfqywwfxajb
-      - TWITCH_CLIENT_SECRET=gg6zk2imvttvur33aiolvl695jsdzl
-      - TWITCH_CALLBACK=http://localhost:4000/#/dashboard/config/social/twitch
-      - TWITTER_KEY=k51MJQ1GlZIerZPIr9fDG8dw9
-      - TWITTER_SECRET=W0BnR6zWyHkttBAlbWzVuvFsxqT5Sletf8NjwjGNzhC3U708ED
-      - TWITTER_CALLBACK=http://localhost:4000/#/dashboard/config/social/twitter
-      - MARATHON_SLUG=esagermany_2017
-      - REFRESH_INTERVAL=300
-      - HTTP_PORT=:3001
+      - TWITCH_CLIENT_ID=
+      - TWITCH_CLIENT_SECRET=
+      - TWITCH_CALLBACK=
+      - TWITTER_KEY=
+      - TWITTER_SECRET=
+      - TWITTER_CALLBACK=
+      - MARATHON_SLUG=
+      - REFRESH_INTERVAL=
+      - HTTP_PORT=
   mongo:
     image: mongo
     volumes:

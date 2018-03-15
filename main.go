@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/onestay/MarathonTools-API/api/routes/donations"
 
@@ -25,13 +26,41 @@ import (
 )
 
 var (
-	mgs         *mgo.Session
-	redisClient *redis.Client
+	mgs                *mgo.Session
+	redisClient        *redis.Client
+	port               string
+	twitchClientID     string
+	twitchClientSecret string
+	twitchCallback     string
+	twitterKey         string
+	twitterSecret      string
+	twitterCallback    string
+	refreshInterval    int
+	marathonSlug       string
 )
+
+type Server struct {
+	r *httprouter.Router
+}
 
 func init() {
 	mgs = getMongoSession()
 	redisClient = getRedisClient()
+
+	// parse env vars
+	twitchClientID = os.Getenv("TWITCH_CLIENT_ID")
+	twitchClientSecret = os.Getenv("TWITCH_CLIENT_SECRET")
+	twitchCallback = os.Getenv("TWITCH_CALLBACK")
+	twitterKey = os.Getenv("TWITTER_KEY")
+	twitterSecret = os.Getenv("TWITTER_SECRET")
+	twitterCallback = os.Getenv("TWITTER_CALLBACK")
+	marathonSlug = os.Getenv("MARATHON_SLUG")
+	i, err := strconv.Atoi(os.Getenv("REFRESH_INTERVAL"))
+	if err != nil {
+		panic("REFRESH_INTERVAL has to be a valid int in ms")
+	}
+	refreshInterval = i
+	port = os.Getenv("HTTP_PORT")
 }
 
 func main() {
@@ -44,11 +73,11 @@ func startHTTPServer() {
 	r := httprouter.New()
 	hub := ws.NewHub()
 	baseController := common.NewController(hub, mgs, 0, redisClient)
-	socialController := social.NewSocialController("od8tmxq45nmgpoenjlhxfqywwfxajb", "gg6zk2imvttvur33aiolvl695jsdzl", "http://localhost:4000/#/dashboard/config/social/twitch", "k51MJQ1GlZIerZPIr9fDG8dw9", "W0BnR6zWyHkttBAlbWzVuvFsxqT5Sletf8NjwjGNzhC3U708ED", "http://localhost:4000/#/dashboard/config/social/twitter", baseController)
-	timeController := timer.NewTimeController(baseController, 500)
+	socialController := social.NewSocialController(twitchClientID, twitchClientSecret, twitterCallback, twitterKey, twitterSecret, twitterCallback, baseController)
+	timeController := timer.NewTimeController(baseController, refreshInterval)
 	runController := runs.NewRunController(baseController)
 
-	srDonationProvider, err := donationProviders.NewSRComDonationProvider("esagermany_2017")
+	srDonationProvider, err := donationProviders.NewSRComDonationProvider(marathonSlug)
 	if err != nil {
 		panic(err)
 	}
@@ -108,8 +137,8 @@ func startHTTPServer() {
 	r.POST("/timer/player/finish/:id", timeController.TimerPlayerFinish)
 	r.POST("/timer/reset", timeController.TimerReset)
 
-	log.Println("server running on :3001")
-	log.Fatal(http.ListenAndServe(":3001", r))
+	log.Println("server running on " + port)
+	log.Fatal(http.ListenAndServe(port, &Server{r}))
 }
 
 func getMongoSession() *mgo.Session {
@@ -152,5 +181,18 @@ func importRuns() {
 	err = os.Rename("./config/runs.json", "./config/runs_imported.json")
 	if err != nil {
 		log.Println("error renaming runs file. Please rename manually so runs aren't imported on restart")
+	}
+}
+
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, PATCH, OPTIONS, HEAD")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	if r.Method == "OPTIONS" {
+		// idk why but because of some reason 504 was the answer to every pre flight request
+		// so this hack has to work
+		w.WriteHeader(200)
+	} else {
+		s.r.ServeHTTP(w, r)
 	}
 }
