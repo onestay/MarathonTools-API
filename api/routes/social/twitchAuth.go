@@ -2,6 +2,7 @@ package social
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -108,23 +109,56 @@ func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// func (sc Controller) twitchRefreshToken() error {
-// 	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	t := TwitchResponse{}
+func (sc Controller) twitchRefreshToken() error {
+	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
+	if err != nil {
+		return err
+	}
+	t := TwitchResponse{}
 
-// 	json.Unmarshal(b, &t)
+	json.Unmarshal(b, &t)
 
-// 	var uri *url.URL
-// 	uri, _ = url.Parse(refreshTokenURL)
+	var uri *url.URL
+	uri, _ = url.Parse(refreshTokenURL)
 
-// 	parameters := url.Values{}
-// 	parameters.Add("client_id", sc.twitchInfo.ClientID)
-// 	parameters.Add("client_secret", sc.twitchInfo.ClientSecret)
-// 	parameters.Add("grant_type", "refresh_token")
-// 	parameters.Add("refresh_token", t.RefreshToken)
-// 	uri.RawQuery = parameters.Encode()
-// 	sc.base.HTTPClient.Get(uri.String())
-// }
+	parameters := url.Values{}
+	parameters.Add("client_id", sc.twitchInfo.ClientID)
+	parameters.Add("client_secret", sc.twitchInfo.ClientSecret)
+	parameters.Add("grant_type", "refresh_token")
+	parameters.Add("refresh_token", t.RefreshToken)
+	uri.RawQuery = parameters.Encode()
+
+	req, err := http.NewRequest("POST", uri.String(), nil)
+	if err != nil {
+		return err
+	}
+
+	res, err := sc.base.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != 200 {
+		return fmt.Errorf("Expected code 200 but got %v from twitch while trying to get refresh token", res.StatusCode)
+	}
+
+	refreshResponse := struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+		Scope        string `json:"scope"`
+	}{}
+	json.NewDecoder(res.Body).Decode(&refreshResponse)
+
+	t.AccessToken = refreshResponse.AccessToken
+	t.Scope = refreshResponse.Scope
+	t.RefreshToken = refreshResponse.RefreshToken
+	fmt.Println(t.AccessToken)
+	bMar, _ := json.Marshal(t)
+
+	err = sc.base.RedisClient.Set("twitchAuth", bMar, 0).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -72,7 +73,7 @@ func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
 	}
 
 	if resp.StatusCode == 400 {
-		//err := sc.twitchRefreshToken()
+		err := sc.twitchRefreshToken()
 		if err != nil {
 			sc.base.LogError("while trying to get refresh token", err, true)
 			return
@@ -177,8 +178,21 @@ func (sc Controller) twitchUpdateInfo() error {
 	}
 
 	if res.StatusCode != 200 {
-		return err
+		err := sc.twitchRefreshToken()
+		if err != nil {
+			return fmt.Errorf("error while trying to get refresh token: %v", err)
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("couldn't update info even afer getting refreshtoken: %v", err)
+		}
+
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("couldn't update info even afer getting refreshtoken. Status code is %v", resp.StatusCode)
+		}
+
 	}
+
 	return nil
 }
 
