@@ -73,7 +73,7 @@ func startHTTPServer() {
 	r := httprouter.New()
 	hub := ws.NewHub()
 	baseController := common.NewController(hub, mgs, 0, redisClient)
-	socialController := social.NewSocialController(twitchClientID, twitchClientSecret, twitterCallback, twitterKey, twitterSecret, twitterCallback, baseController)
+	socialController := social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, baseController)
 	timeController := timer.NewTimeController(baseController, refreshInterval)
 	runController := runs.NewRunController(baseController)
 
