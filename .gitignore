@@ -1,3 +1,4 @@
 vendor
 gin-bin
 *.exe
+docker-compose.yml
