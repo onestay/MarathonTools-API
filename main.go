@@ -117,6 +117,7 @@ func startHTTPServer() {
 	r.PUT("/social/twitch/update", socialController.TwitchUpdateInfo)
 	r.PUT("/social/twitch/settings", socialController.TwitchSetSettings)
 	r.GET("/social/twitch/settings", socialController.TwitchGetSettings)
+	r.POST("/social/twitch/commercial", socialController.TwitchPlayCommercial)
 
 	r.GET("/social/twitter/oauthurl", socialController.TwitterOAuthURL)
 	r.GET("/social/twitter/verify", socialController.TwitterCheckForAuth)

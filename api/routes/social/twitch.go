@@ -44,13 +44,14 @@ type twitchTitleOptions struct {
 // this will mostly use the old twitch api since most of the endpoints I need aren't available in the new one
 // I will try to use the new one as much as possible tho
 const (
-	authorizeURL     = "https://api.twitch.tv/kraken/oauth2/authorize"
-	tokenURL         = "https://api.twitch.tv/kraken/oauth2/token"
-	revokeURL        = "https://api.twitch.tv/kraken/oauth2/revoke"
-	channelURL       = "https://api.twitch.tv/kraken/channel"
-	updateChannelURL = "https://api.twitch.tv/kraken/channels"
-	getStreamURL     = "https://api.twitch.tv/helix/streams"
-	refreshTokenURL  = "https://id.twitch.tv/oauth2/token"
+	authorizeURL      = "https://api.twitch.tv/kraken/oauth2/authorize"
+	tokenURL          = "https://api.twitch.tv/kraken/oauth2/token"
+	revokeURL         = "https://api.twitch.tv/kraken/oauth2/revoke"
+	channelURL        = "https://api.twitch.tv/kraken/channel"
+	updateChannelURL  = "https://api.twitch.tv/kraken/channels"
+	getStreamURL      = "https://api.twitch.tv/helix/streams"
+	refreshTokenURL   = "https://id.twitch.tv/oauth2/token"
+	playCommercialURL = "https://api.twitch.tv/kraken/channels"
 )
 
 func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
@@ -387,5 +388,57 @@ func (sc Controller) getTwitchViewers() int {
 		return twitchRes.Data[0].ViewerCount
 	}
 	return -1
+
+}
+
+func (sc Controller) TwitchPlayCommercial(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			sc.base.Response("", "no twitch auth saved", http.StatusBadRequest, w)
+			return
+		}
+		sc.base.Response("", "couldn't get twitch auth info", http.StatusInternalServerError, w)
+		return
+	}
+	t := TwitchResponse{}
+
+	json.Unmarshal(b, &t)
+
+	commercialTimes := map[int]bool{30: true, 60: true, 90: true, 120: true, 150: true, 180: true}
+
+	body := struct {
+		Length int `json:"length"`
+	}{}
+
+	json.NewDecoder(r.Body).Decode(&body)
+
+	bRes, _ := json.Marshal(body)
+
+	defer r.Body.Close()
+
+	if commercialTimes[body.Length] {
+
+		req, _ := http.NewRequest("POST", playCommercialURL+"/"+t.ChannelID+"/commercial", bytes.NewBuffer(bRes))
+
+		req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
+		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
+		req.Header.Add("Authorization", "OAuth "+t.AccessToken)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, _ := sc.base.HTTPClient.Do(req)
+
+		if res.StatusCode != 200 {
+			if res.StatusCode == 422 {
+				sc.base.Response("", "invalid length or latest commercial less than 8 minutes or channel is not twitch partner", http.StatusUnprocessableEntity, w)
+				return
+			}
+			sc.base.Response("", "an error occured playing the commercial. twitch status code is "+res.Status, http.StatusBadRequest, w)
+			return
+		}
+		sc.base.Response("ok", "", http.StatusOK, w)
+	} else {
+		sc.base.Response("", "invalid commerical time", http.StatusBadRequest, w)
+	}
 
 }

@@ -35,7 +35,7 @@ func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twi
 	t := &twitchInfo{
 		ClientID:     twitchClientID,
 		ClientSecret: twitchClientSecret,
-		Scope:        "channel_editor channel_read",
+		Scope:        "channel_editor channel_read channel_commercial",
 		RedirectURI:  twitchCallback,
 	}
 
