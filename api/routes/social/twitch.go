@@ -212,7 +212,6 @@ func (sc Controller) twitchUpdateInfo() error {
 		if res.StatusCode != 200 {
 			return fmt.Errorf("couldn't update info even afer getting refreshtoken. Status code is %v", res.StatusCode)
 		}
-
 	}
 
 	return nil
@@ -450,12 +449,31 @@ func (sc Controller) TwitchPlayCommercial(w http.ResponseWriter, r *http.Request
 		res, _ := sc.base.HTTPClient.Do(req)
 
 		if res.StatusCode != 200 {
+			// as documented at https://dev.twitch.tv/docs/v5/reference/channels/#start-channel-commercial
 			if res.StatusCode == 422 {
 				sc.base.Response("", "invalid length or latest commercial less than 8 minutes or channel is not twitch partner", http.StatusUnprocessableEntity, w)
 				return
 			}
-			sc.base.Response("", "an error occured playing the commercial. twitch status code is "+res.Status, http.StatusBadRequest, w)
-			return
+
+			// get refresh access token and redo request
+			token, err := sc.twitchRefreshToken()
+			if err != nil {
+				sc.base.Response("", "error while getting twitch refresh token", http.StatusInternalServerError, w)
+			}
+
+			req, _ := http.NewRequest("POST", playCommercialURL+"/"+t.ChannelID+"/commercial", bytes.NewBuffer(bRes))
+
+			req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
+			req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
+			req.Header.Add("Authorization", "OAuth "+token)
+			req.Header.Add("Content-Type", "application/json")
+
+			res, _ := sc.base.HTTPClient.Do(req)
+			if res.StatusCode != 200 {
+				sc.base.Response("", "an error occured playing the commercial after getting refresh token. twitch status code is "+res.Status, http.StatusBadRequest, w)
+				return
+
+			}
 		}
 		sc.base.Response("ok", "", http.StatusOK, w)
 	} else {
