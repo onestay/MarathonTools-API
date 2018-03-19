@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"html/template"
 	"math/rand"
 	"net/http"
 	"strconv"
+	"text/template"
 
 	"gopkg.in/mgo.v2/bson"
 
@@ -136,7 +136,6 @@ func (sc Controller) twitterExecuteTemplate() (string, error) {
 
 	c := sc.base.CurrentRun
 	t := twitterTemplateOptions{c.GameInfo.GameName, c.Players, c.RunInfo.Platform, c.RunInfo.Estimate, c.RunInfo.Category}
-
 	templates, err := sc.twitterGetTemplates()
 	if err != nil {
 		return "", err

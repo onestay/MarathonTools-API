@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/go-redis/redis"
@@ -68,29 +69,35 @@ func (sc Controller) TwitterSendUpdate(w http.ResponseWriter, r *http.Request, _
 }
 
 func (sc Controller) twitterSendUpdate() error {
-	// res, err := sc.base.RedisClient.Get("twitterAuth").Bytes()
-	// if err != nil {
-	// 	sc.base.LogError("Error getting twitter auth from redis", err, true)
-	// }
+	res, err := sc.base.RedisClient.Get("twitterAuth").Bytes()
+	if err != nil {
+		sc.base.LogError("Error getting twitter auth from redis", err, true)
+	}
 
-	// t := oauth1.Token{}
+	t := oauth1.Token{}
 
-	// json.Unmarshal(res, &t)
+	json.Unmarshal(res, &t)
 
-	// c := sc.twitterInfo.Client(oauth1.NoContext, &t)
-	// httpRes, err := c.Post("https://api.twitter.com/1.1/statuses/update.json?status=test", "", nil)
-	// if err != nil {
-	// 	sc.base.LogError("Error sending tweet", err, true)
-	// }
+	c := sc.twitterInfo.Client(oauth1.NoContext, &t)
+	uri, err := url.Parse("https://api.twitter.com/1.1/statuses/update.json")
 
-	// fmt.Fprint(w, httpRes.Status)
-
-	t, err := sc.twitterExecuteTemplate()
+	ts, err := sc.twitterExecuteTemplate()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(t)
+	v := url.Values{}
+	v.Add("status", ts)
+	uri.RawQuery = v.Encode()
+	httpRes, err := c.Post(uri.String(), "", nil)
+	if err != nil {
+		sc.base.LogError("Error sending tweet", err, true)
+	}
+
+	if httpRes.StatusCode != 200 {
+		return fmt.Errorf("Non 200 status code returned from twitter. Status code is %v", httpRes.StatusCode)
+	}
+
 	return nil
 }
 
