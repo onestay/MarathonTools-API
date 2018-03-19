@@ -74,15 +74,25 @@ func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
 	}
 
 	if resp.StatusCode == 400 {
-		err := sc.twitchRefreshToken()
+		token, err := sc.twitchRefreshToken()
 		if err != nil {
 			sc.base.LogError("while trying to get refresh token", err, true)
 			return
 		}
-		resp, err := client.Do(req)
+		req, err := http.NewRequest("GET", channelURL, nil)
 		if err != nil {
-			sc.base.LogError("couldn't get channel id even after successfull refresh token refresh", err, true)
-			return
+			log.Println("Error creating request to get Channel ID")
+		}
+
+		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
+		req.Header.Add("Authorization", "OAuth "+token)
+		req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
+
+		var resp *http.Response
+
+		resp, err = client.Do(req)
+		if err != nil {
+			log.Printf("Error doing request. Err: %v", err)
 		}
 
 		if resp.StatusCode == 400 {
@@ -179,17 +189,28 @@ func (sc Controller) twitchUpdateInfo() error {
 	}
 
 	if res.StatusCode != 200 {
-		err := sc.twitchRefreshToken()
+		token, err := sc.twitchRefreshToken()
 		if err != nil {
 			return fmt.Errorf("error while trying to get refresh token: %v", err)
 		}
-		resp, err := client.Do(req)
+
+		req, err := http.NewRequest("PUT", uri.String(), bytes.NewReader(result))
 		if err != nil {
-			return fmt.Errorf("couldn't update info even afer getting refreshtoken: %v", err)
+			return err
 		}
 
-		if resp.StatusCode != 200 {
-			return fmt.Errorf("couldn't update info even afer getting refreshtoken. Status code is %v", resp.StatusCode)
+		req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
+		req.Header.Add("Authorization", "OAuth "+token)
+		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+
+		if res.StatusCode != 200 {
+			return fmt.Errorf("couldn't update info even afer getting refreshtoken. Status code is %v", res.StatusCode)
 		}
 
 	}

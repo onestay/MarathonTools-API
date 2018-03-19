@@ -109,10 +109,10 @@ func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (sc Controller) twitchRefreshToken() error {
+func (sc Controller) twitchRefreshToken() (string, error) {
 	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
 	if err != nil {
-		return err
+		return "", err
 	}
 	t := TwitchResponse{}
 
@@ -130,16 +130,16 @@ func (sc Controller) twitchRefreshToken() error {
 
 	req, err := http.NewRequest("POST", uri.String(), nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	res, err := sc.base.HTTPClient.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if res.StatusCode != 200 {
-		return fmt.Errorf("Expected code 200 but got %v from twitch while trying to get refresh token", res.StatusCode)
+		return "", fmt.Errorf("Expected code 200 but got %v from twitch while trying to get refresh token", res.StatusCode)
 	}
 
 	refreshResponse := struct {
@@ -157,8 +157,8 @@ func (sc Controller) twitchRefreshToken() error {
 
 	err = sc.base.RedisClient.Set("twitchAuth", bMar, 0).Err()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return t.AccessToken, nil
 }
