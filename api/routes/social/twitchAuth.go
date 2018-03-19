@@ -152,7 +152,6 @@ func (sc Controller) twitchRefreshToken() (string, error) {
 	t.AccessToken = refreshResponse.AccessToken
 	t.Scope = refreshResponse.Scope
 	t.RefreshToken = refreshResponse.RefreshToken
-	fmt.Println(t.AccessToken)
 	bMar, _ := json.Marshal(t)
 
 	err = sc.base.RedisClient.Set("twitchAuth", bMar, 0).Err()
