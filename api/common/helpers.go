@@ -27,6 +27,11 @@ func (c *Controller) UpdateActiveRuns() {
 	}
 }
 
+// UpdateUpNext will set the UpNext field on the base controller object to next run. That means NextRun und UpNext can be updated at different times. For displaying up next in overlay
+func (c *Controller) UpdateUpNext() {
+	c.UpNext = c.NextRun
+}
+
 // Response will send out a generic response
 func (c Controller) Response(res, err string, code int, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")

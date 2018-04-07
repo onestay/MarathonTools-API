@@ -19,6 +19,7 @@ type Controller struct {
 	CurrentRun  *models.Run
 	NextRun     *models.Run
 	PrevRun     *models.Run
+	UpNext      *models.Run
 	RedisClient *redis.Client
 	TimerState  TimerState
 	TimerTime   float64
@@ -68,6 +69,6 @@ func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client)
 	}
 
 	c.UpdateActiveRuns()
-
+	c.UpdateUpNext()
 	return c
 }

@@ -19,7 +19,8 @@ func (c Controller) SendInitialData() []byte {
 		NextRun    models.Run   `json:"nextRun"`
 		RunIndex   int          `json:"runIndex"`
 		TimerState TimerState   `json:"timerState"`
-	}{"initalData", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex, c.TimerState}
+		UpNextRun  models.Run   `json:"upNext"`
+	}{"initalData", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex, c.TimerState, *c.UpNext}
 
 	d, _ := json.Marshal(data)
 
@@ -38,7 +39,8 @@ func (c Controller) WSRunUpdate() {
 		CurrentRun models.Run   `json:"currentRun"`
 		NextRun    models.Run   `json:"nextRun"`
 		RunIndex   int          `json:"runIndex"`
-	}{"runUpdate", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex}
+		UpNextRun  models.Run   `json:"upNext"`
+	}{"runUpdate", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex, *c.UpNext}
 
 	d, _ := json.Marshal(data)
 
@@ -67,8 +69,9 @@ func (c Controller) WSCurrentUpdate() {
 		PrevRun    models.Run `json:"prevRun"`
 		CurrentRun models.Run `json:"currentRun"`
 		NextRun    models.Run `json:"nextRun"`
+		UpNextRun  models.Run `json:"upNext"`
 		RunIndex   int        `json:"runIndex"`
-	}{"runCurrentUpdate", *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex}
+	}{"runCurrentUpdate", *c.PrevRun, *c.CurrentRun, *c.NextRun, *c.UpNext, c.RunIndex}
 
 	d, _ := json.Marshal(data)
 
