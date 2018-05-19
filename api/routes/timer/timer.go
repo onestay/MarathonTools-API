@@ -50,6 +50,8 @@ func (c *Controller) TimerStart(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
+	go c.b.UpdateUpNext()
+
 	c.startTime = time.Now()
 	c.timerLoop()
 

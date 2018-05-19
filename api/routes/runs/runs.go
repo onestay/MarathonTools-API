@@ -42,7 +42,8 @@ func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprou
 
 	rc.base.Response(run.RunID.Hex(), "", http.StatusOK, w)
 
-	rc.base.WSRunsOnlyUpdate()
+	go rc.base.WSRunsOnlyUpdate()
+	go rc.base.UpdateActiveRuns()
 }
 
 // GetRuns will return all runs from the mgo collection

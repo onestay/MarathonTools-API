@@ -7,12 +7,12 @@ import (
 // Run represents a single run
 type Run struct {
 	RunID    bson.ObjectId `json:"runID" bson:"_id"`
-	GameInfo gameInfo      `json:"gameInfo" bson:"gameInfo"`
+	GameInfo GameInfo      `json:"gameInfo" bson:"gameInfo"`
 	RunInfo  runInfo       `json:"runInfo" bson:"runInfo"`
 	Players  []PlayerInfo  `json:"players" bson:"playerInfo"`
 }
 
-type gameInfo struct {
+type GameInfo struct {
 	GameName    string `json:"gameName" bson:"gameName"`
 	ReleaseYear int    `json:"releaseYear" bson:"releaseYear"`
 }

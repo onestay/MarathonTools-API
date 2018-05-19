@@ -13,6 +13,16 @@ import (
 func (c *Controller) UpdateActiveRuns() {
 	runs := []models.Run{}
 	c.Col.Find(nil).All(&runs)
+	if len(runs) == 0 {
+		c.CurrentRun = &models.Run{
+			GameInfo: models.GameInfo{
+				GameName: "No runs found. Please add a run over the config>runs menu.",
+			},
+		}
+		c.PrevRun = &models.Run{}
+		c.NextRun = &models.Run{}
+		return
+	}
 	c.CurrentRun = &runs[c.RunIndex]
 
 	if c.RunIndex == 0 {

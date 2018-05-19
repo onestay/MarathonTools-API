@@ -165,7 +165,7 @@ func importRuns() {
 	runs := []models.Run{}
 	runFile, err := os.Open("./config/runs.json")
 	if err != nil {
-		log.Println("no runs file... this can be ignored if runs are already imported")
+		log.Println("no runs file")
 		return
 	}
 
