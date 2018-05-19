@@ -141,7 +141,7 @@ func startHTTPServer() {
 	// checklist stuff
 	r.POST("/checklist/add", baseController.CL.AddItem)
 	r.DELETE("/checklist/delete", baseController.CL.DeleteItem)
-	r.PUT("/checklist/togge", baseController.CL.ToggleItem)
+	r.PUT("/checklist/toggle", baseController.CL.ToggleItem)
 	r.GET("/checklist/done", baseController.CL.CheckDoneHTTP)
 	r.GET("/checklist", baseController.CL.GetChecklist)
 
