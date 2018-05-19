@@ -26,6 +26,7 @@ type Controller struct {
 	HTTPClient  http.Client
 	// ComChan is used to communicate with the socialController on twitter and twitch updates
 	ComChan chan int
+	CL      *Checklist
 }
 
 type httpResponse struct {
@@ -67,7 +68,7 @@ func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client)
 		HTTPClient:  http.Client{},
 		ComChan:     make(chan int, 1),
 	}
-
+	c.CL = NewChecklist(c)
 	c.UpdateActiveRuns()
 	c.UpdateUpNext()
 	return c

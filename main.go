@@ -138,6 +138,13 @@ func startHTTPServer() {
 	r.POST("/timer/player/finish/:id", timeController.TimerPlayerFinish)
 	r.POST("/timer/reset", timeController.TimerReset)
 
+	// checklist stuff
+	r.POST("/checklist/add", baseController.CL.AddItem)
+	r.DELETE("/checklist/delete", baseController.CL.DeleteItem)
+	r.PUT("/checklist/togge", baseController.CL.ToggleItem)
+	r.GET("/checklist/done", baseController.CL.CheckDoneHTTP)
+	r.GET("/checklist", baseController.CL.GetChecklist)
+
 	log.Println("server running on " + port)
 	log.Fatal(http.ListenAndServe(port, &Server{r}))
 }
