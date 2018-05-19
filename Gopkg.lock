@@ -18,10 +18,12 @@
     "internal/consistenthash",
     "internal/hashtag",
     "internal/pool",
-    "internal/proto"
+    "internal/proto",
+    "internal/singleflight",
+    "internal/util"
   ]
-  revision = "8e6b51ec3a92ec095dcbd2439c7a3eec6b6cb586"
-  version = "v6.7.1"
+  revision = "877867d2845fbaf86798befe410b6ceb6f5c29a3"
+  version = "v6.10.2"
 
 [[projects]]
   name = "github.com/gorilla/websocket"
@@ -39,7 +41,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "c7086645de248775cbf2373cf5ca4d2fa664b8c1"
+  revision = "57065200b4b034a1c8ad54ff77069408c2218ae6"
 
 [[projects]]
   branch = "v2"
@@ -56,6 +58,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e07fddec55df89a6fb06cdf74a078bbe208c715c6cbf6d8539606c074b278af3"
+  inputs-digest = "d4cbff57b20d46fd9371cca9de049379c24bc767a04ba0fe5debb355fd19e7b5"
   solver-name = "gps-cdcl"
   solver-version = 1
