@@ -1,12 +1,12 @@
-FROM golang:latest
+FROM golang:1.10.2
 
 WORKDIR /go/src/github.com/onestay/MarathonTools-API
 COPY . .
 
-RUN go get -u github.com/golang/dep/cmd/dep && \
-	dep ensure -vendor-only
+RUN curl -fsSL -o /usr/local/bin/dep https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 && chmod +x /usr/local/bin/dep
+RUN dep ensure -vendor-only
 
-RUN go build -pkgdir vendor
+RUN go build
 
 EXPOSE 3001
 
