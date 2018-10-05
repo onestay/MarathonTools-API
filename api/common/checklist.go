@@ -2,7 +2,7 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -27,6 +27,7 @@ func NewChecklist(b *Controller) *Checklist {
 	// 3: a new checklist
 
 	if _, err := os.Stat("./config/checklist.json"); err == nil {
+		log.Println("Found checklist file. Importing from file.")
 		clFile, err := os.Open("./config/checklist.json")
 		if err != nil {
 			b.LogError("Couldn't open checklist file", err, false)
@@ -40,26 +41,31 @@ func NewChecklist(b *Controller) *Checklist {
 
 		json.NewDecoder(clFile).Decode(&cl)
 
-		err = os.Rename("./config/checklist.json", "./config/checklist.json")
+		err = os.Rename("./config/checklist.json", "./config/checklist_imported.json")
 		if err != nil {
 			b.LogError("when renaming. Please rename manually", err, false)
 		}
 	} else if b, err := b.RedisClient.Get("checklist").Bytes(); err != redis.Nil && len(b) != 0 {
 		// if a checklist was already saved on a previous run we want to keep that
 		// however it is likely that we want it set to completely false in that case
-		fmt.Println("t")
+		log.Println("Checklist found in redis. Loading checklist from redis")
 		json.Unmarshal(b, &cl)
 		for k := range cl {
 			cl[k] = false
 		}
 	} else {
+		log.Println("Not checklist file found. Checklist not found in Redis. Creating new checklist")
 		cl = make(map[string]bool, 100)
 	}
 
-	return &Checklist{
+	c := Checklist{
 		Items: cl,
 		b:     b,
 	}
+
+	c.saveToRedis()
+
+	return &c
 }
 
 // AddItem will add an item to the checklist
@@ -68,6 +74,7 @@ func (c *Checklist) AddItem(w http.ResponseWriter, r *http.Request, _ httprouter
 		c.Items[i] = false
 		c.saveToRedis()
 		json.NewEncoder(w).Encode(c.Items)
+		go c.b.WSChecklistUpdate()
 		return
 	}
 	c.b.Response("", "no item defined", http.StatusBadRequest, w)
@@ -79,6 +86,7 @@ func (c *Checklist) DeleteItem(w http.ResponseWriter, r *http.Request, _ httprou
 		delete(c.Items, i)
 		c.saveToRedis()
 		json.NewEncoder(w).Encode(c.Items)
+		go c.b.WSChecklistUpdate()
 		return
 	}
 	c.b.Response("", "no item defined", http.StatusBadRequest, w)
@@ -92,6 +100,7 @@ func (c *Checklist) ToggleItem(w http.ResponseWriter, r *http.Request, _ httprou
 			c.Items[i] = !r
 		}
 
+		go c.b.WSChecklistUpdate()
 		json.NewEncoder(w).Encode(c.Items)
 		return
 	}
