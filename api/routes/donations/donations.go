@@ -48,6 +48,9 @@ func NewDonationController(b *common.Controller, d DonationProvider, e bool) *Do
 		enabled: e,
 	}
 
+	if !e {
+		return dController
+	}
 	t, _ := dController.d.GetTotalAmount()
 
 	dController.donationTotal = t
