@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/go-redis/redis"
@@ -78,33 +77,35 @@ func (sc Controller) twitterSendUpdate() error {
 
 	json.Unmarshal(res, &t)
 
-	c := sc.twitterInfo.Client(oauth1.NoContext, &t)
-	uri, err := url.Parse("https://api.twitter.com/1.1/statuses/update.json")
+	// c := sc.twitterInfo.Client(oauth1.NoContext, &t)
+	// uri, err := url.Parse("https://api.twitter.com/1.1/statuses/update.json")
 
 	ts, err := sc.twitterExecuteTemplate()
 	if err != nil {
 		return err
 	}
 
-	v := url.Values{}
-	v.Add("status", ts)
-	uri.RawQuery = v.Encode()
-	httpRes, err := c.Post(uri.String(), "", nil)
-	if err != nil {
-		sc.base.LogError("Error sending tweet", err, true)
-	}
-
-	if httpRes.StatusCode != 200 {
-		return fmt.Errorf("Non 200 status code returned from twitter. Status code is %v", httpRes.StatusCode)
-	}
+	// v := url.Values{}
+	// v.Add("status", ts)
+	// uri.RawQuery = v.Encode()
+	// httpRes, err := c.Post(uri.String(), "", nil)
+	// if err != nil {
+	// 	sc.base.LogError("Error sending tweet", err, true)
+	// }
+	fmt.Println(ts)
+	// if httpRes.StatusCode != 200 {
+	// 	return fmt.Errorf("Non 200 status code returned from twitter. Status code is %v", httpRes.StatusCode)
+	// }
 
 	return nil
 }
 
+// TwitterSettings contains the settings for Twitter
 type TwitterSettings struct {
 	SendTweets bool `json:"sendTweets"`
 }
 
+// TwitterSetSettings is used to set settings for twitter
 func (sc Controller) TwitterSetSettings(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	body := TwitterSettings{}
 
@@ -117,6 +118,7 @@ func (sc Controller) TwitterSetSettings(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// TwitterGetSettings is used to get settings for twitter
 func (sc Controller) TwitterGetSettings(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res, err := sc.base.RedisClient.Get("twitterSettings").Bytes()
 	if err != nil {

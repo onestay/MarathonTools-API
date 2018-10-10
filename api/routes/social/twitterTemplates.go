@@ -78,6 +78,10 @@ func (sc Controller) TwitterAddTemplate(w http.ResponseWriter, r *http.Request, 
 func (sc Controller) TwitterGetTemplates(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	t, err := sc.twitterGetTemplates()
 	if err != nil {
+		if err.Error() == "No templates added" {
+			sc.base.Response("", err.Error(), http.StatusOK, w)
+			return
+		}
 		sc.base.Response("", err.Error(), http.StatusInternalServerError, w)
 		return
 	}

@@ -230,7 +230,10 @@ func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ 
 // TwitchExecuteTemplate will execute the template string given via config
 func (sc Controller) TwitchExecuteTemplate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res := sc.twitchExecuteTemplate()
-	if res == "ERROR" {
+	if res == "NOTEMPLATE" {
+		sc.base.Response("", "NOTEMPLATE", 200, w)
+		return
+	} else if res == "ERROR" {
 		sc.base.Response("", res, http.StatusInternalServerError, w)
 		return
 
@@ -245,7 +248,7 @@ func (sc Controller) twitchExecuteTemplate() string {
 	res, err := sc.base.RedisClient.Get("twitchSettings").Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return "ERROR"
+			return "NOTEMPLATE"
 		}
 		sc.base.LogError("error while getting twitch settings from redis", err, true)
 		return "ERROR"
@@ -311,7 +314,7 @@ func (sc Controller) TwitchGetSettings(w http.ResponseWriter, r *http.Request, p
 	res, err := sc.base.RedisClient.Get("twitchSettings").Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			sc.base.Response("", "no settings have been saved", 404, w)
+			sc.base.Response("", "no settings have been saved", 200, w)
 			return
 		}
 		sc.base.LogError("error while getting twitch settings from redis", err, true)
