@@ -19,8 +19,8 @@ services:
       - TWITTER_SECRET=
       - TWITTER_CALLBACK=
       - MARATHON_SLUG=
-      - REFRESH_INTERVAL=
-      - HTTP_PORT=
+      - REFRESH_INTERVAL=100
+      - HTTP_PORT=:3001
   mongo:
     image: mongo
     volumes:

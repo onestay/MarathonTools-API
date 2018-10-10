@@ -37,13 +37,15 @@ type DonationController struct {
 	d             DonationProvider
 	t             *time.Ticker
 	donationTotal float64
+	enabled       bool
 }
 
 // NewDonationController takes the base controller and an donation interface and returns a new DonationController
-func NewDonationController(b *common.Controller, d DonationProvider) *DonationController {
+func NewDonationController(b *common.Controller, d DonationProvider, e bool) *DonationController {
 	dController := &DonationController{
-		base: b,
-		d:    d,
+		base:    b,
+		d:       d,
+		enabled: e,
 	}
 
 	t, _ := dController.d.GetTotalAmount()
@@ -55,6 +57,11 @@ func NewDonationController(b *common.Controller, d DonationProvider) *DonationCo
 
 // GetTotal will get the total amount of money donated
 func (d *DonationController) GetTotal(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !d.enabled {
+		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
+		return
+	}
+
 	amount, err := d.d.GetTotalAmount()
 	if err != nil {
 		d.base.Response("", "An error occured getting total donation amount", 500, w)
@@ -71,6 +78,11 @@ func (d *DonationController) GetTotal(w http.ResponseWriter, r *http.Request, _ 
 
 // GetAll will return all donations
 func (d *DonationController) GetAll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !d.enabled {
+		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
+		return
+	}
+
 	donations, err := d.d.GetDonations()
 	if err != nil {
 		d.base.Response("", "An error occured getting donations", 500, w)
@@ -87,6 +99,11 @@ func (d *DonationController) GetAll(w http.ResponseWriter, r *http.Request, _ ht
 
 // GetTotalDonations will return the number of all donations
 func (d *DonationController) GetTotalDonations(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !d.enabled {
+		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
+		return
+	}
+
 	amount, err := d.d.GetTotalDonations()
 	if err != nil {
 		d.base.Response("", "An error occured getting donations", 500, w)
@@ -102,6 +119,11 @@ func (d *DonationController) GetTotalDonations(w http.ResponseWriter, r *http.Re
 }
 
 func (d *DonationController) StartTotalUpdate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !d.enabled {
+		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
+		return
+	}
+
 	if d.t != nil {
 		d.base.Response("", "already running", 400, w)
 		return
@@ -128,6 +150,11 @@ func (d *DonationController) StartTotalUpdate(w http.ResponseWriter, r *http.Req
 }
 
 func (d *DonationController) StopTotalUpdate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !d.enabled {
+		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
+		return
+	}
+
 	if d.t == nil {
 		d.base.Response("", "not running", 400, w)
 		return

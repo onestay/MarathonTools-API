@@ -232,6 +232,7 @@ func (sc Controller) TwitchExecuteTemplate(w http.ResponseWriter, r *http.Reques
 	res := sc.twitchExecuteTemplate()
 	if res == "ERROR" {
 		sc.base.Response("", res, http.StatusInternalServerError, w)
+		return
 
 	}
 	sc.base.Response(res, "", http.StatusOK, w)

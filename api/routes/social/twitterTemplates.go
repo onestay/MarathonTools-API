@@ -79,6 +79,7 @@ func (sc Controller) TwitterGetTemplates(w http.ResponseWriter, r *http.Request,
 	t, err := sc.twitterGetTemplates()
 	if err != nil {
 		sc.base.Response("", err.Error(), http.StatusInternalServerError, w)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

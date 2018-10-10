@@ -77,12 +77,14 @@ func startHTTPServer() {
 	timeController := timer.NewTimeController(baseController, refreshInterval)
 	runController := runs.NewRunController(baseController)
 
+	donationsEnabled := false
 	srDonationProvider, err := donationProviders.NewSRComDonationProvider(marathonSlug)
 	if err != nil {
-		panic(err)
+		log.Printf("Error during donation provider creation: %v", err)
+		donationsEnabled = false
 	}
 
-	donationController := donations.NewDonationController(baseController, srDonationProvider)
+	donationController := donations.NewDonationController(baseController, srDonationProvider, donationsEnabled)
 	go hub.Run()
 
 	r.GET("/ws", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
