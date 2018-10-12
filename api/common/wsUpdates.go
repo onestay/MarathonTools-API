@@ -12,15 +12,15 @@ func (c Controller) SendInitialData() []byte {
 	c.Col.Find(nil).All(&runs)
 
 	data := struct {
-		DataType       string          `json:"dataType"`
-		Runs           []models.Run    `json:"runs"`
-		PrevRun        models.Run      `json:"prevRun"`
-		CurrentRun     models.Run      `json:"currentRun"`
-		NextRun        models.Run      `json:"nextRun"`
-		RunIndex       int             `json:"runIndex"`
-		TimerState     TimerState      `json:"timerState"`
-		UpNextRun      models.Run      `json:"upNext"`
-		ChecklistItems map[string]bool `json:"checklistItems"`
+		DataType       string       `json:"dataType"`
+		Runs           []models.Run `json:"runs"`
+		PrevRun        models.Run   `json:"prevRun"`
+		CurrentRun     models.Run   `json:"currentRun"`
+		NextRun        models.Run   `json:"nextRun"`
+		RunIndex       int          `json:"runIndex"`
+		TimerState     TimerState   `json:"timerState"`
+		UpNextRun      models.Run   `json:"upNext"`
+		ChecklistItems []*item      `json:"checklistItems"`
 	}{"initalData", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex, c.TimerState, *c.UpNext, c.CL.Items}
 
 	d, _ := json.Marshal(data)
@@ -51,8 +51,8 @@ func (c Controller) WSRunUpdate() {
 // WSChecklistUpdate sends a checklist update to the websocket
 func (c Controller) WSChecklistUpdate() {
 	data := struct {
-		DataType       string          `json:"dataType"`
-		ChecklistItems map[string]bool `json:"checklistItems"`
+		DataType       string  `json:"dataType"`
+		ChecklistItems []*item `json:"checklistItems"`
 	}{"checklistUpdate", c.CL.Items}
 
 	d, _ := json.Marshal(data)
@@ -127,6 +127,7 @@ func (c Controller) WSReportError(e string) {
 	c.WS.Broadcast <- d
 }
 
+// WSDonationUpdate sends an update about donations to the client
 func (c Controller) WSDonationUpdate(oldAmount, newAmount float64) {
 	data := struct {
 		DataType   string  `json:"dataType"`
