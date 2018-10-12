@@ -18,6 +18,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// TODO: add the channel id to the twitch settings so user can specify channel id. Defaults to authenticated user channel id
+
 // TwitchResponse is the response returned from the twitch servers for a access token
 type TwitchResponse struct {
 	AccessToken  string `json:"access_token" bson:"accessToken"`
