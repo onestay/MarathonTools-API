@@ -245,7 +245,7 @@ func (rc *RunController) checkForUpdate() {
 		json.Unmarshal(res, &ts)
 
 		if ts.TitleUpdate || ts.GameUpdate {
-			rc.base.ComChan <- 1
+			rc.base.SocialUpdatesChan <- 1
 		}
 
 	}()
@@ -260,7 +260,7 @@ func (rc *RunController) checkForUpdate() {
 			return
 		}
 		if b, err := strconv.ParseBool(string(res)); err == nil && b == true {
-			rc.base.ComChan <- 2
+			rc.base.SocialUpdatesChan <- 2
 		}
 	}()
 }

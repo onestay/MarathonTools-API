@@ -59,7 +59,7 @@ func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twi
 
 func (sc Controller) comReciever() {
 	for {
-		i := <-sc.base.ComChan
+		i := <-sc.base.SocialUpdatesChan
 		if i == 1 {
 			err := sc.twitchUpdateInfo()
 			if err != nil {

@@ -24,9 +24,9 @@ type Controller struct {
 	TimerState  TimerState
 	TimerTime   float64
 	HTTPClient  http.Client
-	// ComChan is used to communicate with the socialController on twitter and twitch updates
-	ComChan chan int
-	CL      *Checklist
+	// SocialUpdatesChan is used to communicate with the socialController on twitter and twitch updates
+	SocialUpdatesChan chan int
+	CL                *Checklist
 }
 
 type httpResponse struct {
@@ -58,15 +58,15 @@ func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client)
 	runs := []models.Run{}
 	mgs.DB("marathon").C("runs").Find(nil).All(&runs)
 	c := &Controller{
-		WS:          hub,
-		MGS:         mgs,
-		RunIndex:    crIndex,
-		Col:         mgs.DB("marathon").C("runs"),
-		RedisClient: rc,
-		TimerState:  2,
-		TimerTime:   0,
-		HTTPClient:  http.Client{},
-		ComChan:     make(chan int, 1),
+		WS:                hub,
+		MGS:               mgs,
+		RunIndex:          crIndex,
+		Col:               mgs.DB("marathon").C("runs"),
+		RedisClient:       rc,
+		TimerState:        2,
+		TimerTime:         0,
+		HTTPClient:        http.Client{},
+		SocialUpdatesChan: make(chan int, 1),
 	}
 	c.CL = NewChecklist(c)
 	c.UpdateActiveRuns()
