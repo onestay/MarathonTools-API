@@ -64,6 +64,7 @@ func init() {
 }
 
 func main() {
+	log.Println("Checking for runs to be imported...")
 	importRuns()
 	startHTTPServer()
 	// os.Getenv("jsonruns") == "true"
@@ -72,12 +73,17 @@ func main() {
 func startHTTPServer() {
 	r := httprouter.New()
 	hub := ws.NewHub()
+	log.Println("Initializing base controller...")
 	baseController := common.NewController(hub, mgs, 0, redisClient)
+	log.Println("Initializing social controller...")
 	socialController := social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, baseController)
+	log.Println("Initializing time controller...")
 	timeController := timer.NewTimeController(baseController, refreshInterval)
+	log.Println("Initializing run controller")
 	runController := runs.NewRunController(baseController)
 
 	donationsEnabled := false
+	log.Printf("Enabling donations...")
 	srDonationProvider, err := donationProviders.NewSRComDonationProvider(marathonSlug)
 	if err != nil {
 		log.Printf("Error during donation provider creation: %v", err)
@@ -85,6 +91,7 @@ func startHTTPServer() {
 	}
 
 	donationController := donations.NewDonationController(baseController, srDonationProvider, donationsEnabled)
+	log.Println("Starting websocket hub...")
 	go hub.Run()
 
 	r.GET("/ws", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -147,6 +154,7 @@ func startHTTPServer() {
 	r.GET("/checklist/done", baseController.CL.CheckDoneHTTP)
 	r.GET("/checklist", baseController.CL.GetChecklist)
 
+	r.POST("/schedule/update", baseController.UpdateScheduleHTTP)
 	log.Println("server running on " + port)
 	log.Fatal(http.ListenAndServe(port, &Server{r}))
 }

@@ -40,6 +40,7 @@ func (c *Controller) UpdateActiveRuns() {
 // UpdateUpNext will set the UpNext field on the base controller object to next run. That means NextRun und UpNext can be updated at different times. For displaying up next in overlay
 func (c *Controller) UpdateUpNext() {
 	c.UpNext = c.NextRun
+	go c.WSUpNextUpdate()
 }
 
 // Response will send out a generic response

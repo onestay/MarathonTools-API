@@ -49,8 +49,11 @@ func (c *Controller) TimerStart(w http.ResponseWriter, r *http.Request, _ httpro
 	if c.invalidState("start", w) {
 		return
 	}
-
-	go c.b.UpdateUpNext()
+	go func() {
+		if c.b.CL.Finished {
+			go c.b.UpdateUpNext()
+		}
+	}()
 
 	c.startTime = time.Now()
 	c.timerLoop()

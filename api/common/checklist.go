@@ -12,7 +12,7 @@ import (
 
 type item struct {
 	Key  string `json:"key"`
-	Done bool   `Json:"done"`
+	Done bool   `json:"done"`
 }
 
 // Checklist provides the implamentation of a checklist
@@ -26,7 +26,7 @@ type Checklist struct {
 
 // NewChecklist initizalies and returns a new Checklist
 func NewChecklist(b *Controller) *Checklist {
-
+	log.Println("Initializing checklist...")
 	var items []*item
 	// // a checklist can be initalized in three ways
 	// // 1: through a checklist file
@@ -72,7 +72,6 @@ func NewChecklist(b *Controller) *Checklist {
 	}
 	c.Finished = false
 	c.saveToRedis()
-
 	return &c
 }
 

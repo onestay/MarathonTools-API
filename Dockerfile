@@ -1,4 +1,4 @@
-FROM golang:1.10.2
+FROM golang:1.11.1
 
 WORKDIR /go/src/github.com/onestay/MarathonTools-API
 COPY . .

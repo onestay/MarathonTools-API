@@ -48,6 +48,18 @@ func (c Controller) WSRunUpdate() {
 	c.WS.Broadcast <- d
 }
 
+// WSUpNextUpdate will set the up next run
+func (c Controller) WSUpNextUpdate() {
+	data := struct {
+		DataType  string     `json:"dataType,omitempty"`
+		UpNextRun models.Run `json:"upNextRun,omitempty"`
+	}{"upNextUpdate", *c.UpNext}
+
+	d, _ := json.Marshal(data)
+
+	c.WS.Broadcast <- d
+}
+
 // WSChecklistUpdate sends a checklist update to the websocket
 func (c Controller) WSChecklistUpdate() {
 	data := struct {
