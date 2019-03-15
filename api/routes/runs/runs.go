@@ -27,6 +27,11 @@ func NewRunController(b *common.Controller) *RunController {
 	}
 }
 
+// RefreshLayout will send a WsCurrentUpdate to refresh the layout
+func (rc RunController) RefreshLayout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	rc.base.WSCurrentUpdate()
+}
+
 // AddRun will add a run to the database and return the ID of the new run
 func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	run := models.Run{}
