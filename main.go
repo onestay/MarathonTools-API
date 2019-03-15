@@ -82,15 +82,17 @@ func startHTTPServer() {
 	log.Println("Initializing run controller")
 	runController := runs.NewRunController(baseController)
 
-	donationsEnabled := false
-	log.Printf("Enabling donations...")
-	srDonationProvider, err := donationProviders.NewSRComDonationProvider(marathonSlug)
-	if err != nil {
-		log.Printf("Error during donation provider creation: %v", err)
-		donationsEnabled = false
-	}
+	// donationsEnabled := false
+	// log.Printf("Enabling donations...")
+	// srDonationProvider, err := donationProviders.NewSRComDonationProvider(marathonSlug)
+	// if err != nil {
+	// 	log.Printf("Error during donation provider creation: %v", err)
+	// 	donationsEnabled = false
+	// }
 
-	donationController := donations.NewDonationController(baseController, srDonationProvider, donationsEnabled)
+	gdqDonationProvider, _ := donationProviders.NewGDQDonationProvider("https://tracker.speedcon.eu/", "1", "_", "_")
+
+	donationController := donations.NewDonationController(baseController, gdqDonationProvider, true)
 	log.Println("Starting websocket hub...")
 	go hub.Run()
 
@@ -117,6 +119,7 @@ func startHTTPServer() {
 	r.POST("/run/add/single", runController.AddRun)
 	r.POST("/run/switch", runController.SwitchRun)
 
+	r.POST("/run/layout", runController.RefreshLayout)
 	// social stuff
 	r.GET("/social/twitch/oauthurl", socialController.TwitchOAuthURL)
 	r.GET("/social/twitch/verify", socialController.TwitchCheckForAuth)
