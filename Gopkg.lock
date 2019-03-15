@@ -2,18 +2,34 @@
 
 
 [[projects]]
-  digest = "1:71ea69b105992d121d21ca77d2fd01ff071153ada65db7cde5f8f3566f84a2a2"
+  digest = "1:573fa46f8d413d4bc3f7cc5e86b2c43cb21559f4fb0a19d9874d228e28fdc07c"
+  name = "github.com/PuerkitoBio/goquery"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2d2796f41742ece03e8086188fa4db16a3a0b458"
+  version = "v1.5.0"
+
+[[projects]]
+  digest = "1:66b3310cf22cdc96c35ef84ede4f7b9b370971c4025f394c89a2638729653b11"
+  name = "github.com/andybalholm/cascadia"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "901648c87902174f774fac311d7f176f8647bdaa"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:ef9c9f584414d07ed375a40ca065812b5371e4e754a54989072b6d6aea997140"
   name = "github.com/dghubble/oauth1"
   packages = [
     ".",
     "twitter",
   ]
   pruneopts = "UT"
-  revision = "70562a5920ad9b6ff03ef697c0f90ae569abbd2b"
-  version = "v0.4.0"
+  revision = "f0fe2bff8fbf301b33359ca431e4afc90390aab0"
+  version = "v0.5.0"
 
 [[projects]]
-  digest = "1:7c2fd446293ff7799cc496d3446e674ee67902d119f244de645caf95dff1bb98"
+  digest = "1:33082c63746b464db3d1c2c07a1396d860484d97fe857ef9e8668a9b406db09f"
   name = "github.com/go-redis/redis"
   packages = [
     ".",
@@ -22,12 +38,11 @@
     "internal/hashtag",
     "internal/pool",
     "internal/proto",
-    "internal/singleflight",
     "internal/util",
   ]
   pruneopts = "UT"
-  revision = "f3bba01df2026fc865f7782948845db9cf44cf23"
-  version = "v6.14.1"
+  revision = "d22fde8721cc915a55aeb6b00944a76a92bfeb6e"
+  version = "v6.15.2"
 
 [[projects]]
   digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
@@ -47,11 +62,39 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
+  digest = "1:4ceb73c435a9fcc48a47d269982690b006aea62f1c883d26eb5df1da80f3dcfc"
   name = "golang.org/x/net"
-  packages = ["context"]
+  packages = [
+    "html",
+    "html/atom",
+    "idna",
+    "publicsuffix",
+  ]
   pruneopts = "UT"
   revision = "57065200b4b034a1c8ad54ff77069408c2218ae6"
+
+[[projects]]
+  digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
+  name = "golang.org/x/text"
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable",
+  ]
+  pruneopts = "UT"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "v2"
@@ -71,11 +114,13 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/PuerkitoBio/goquery",
     "github.com/dghubble/oauth1",
     "github.com/dghubble/oauth1/twitter",
     "github.com/go-redis/redis",
     "github.com/gorilla/websocket",
     "github.com/julienschmidt/httprouter",
+    "golang.org/x/net/publicsuffix",
     "gopkg.in/mgo.v2",
     "gopkg.in/mgo.v2/bson",
   ]
