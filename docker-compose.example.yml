@@ -18,9 +18,20 @@ services:
       - TWITTER_KEY=
       - TWITTER_SECRET=
       - TWITTER_CALLBACK=
-      - MARATHON_SLUG=
       - REFRESH_INTERVAL=100
       - HTTP_PORT=:3001
+      # DONATION_PROVIDER specifies the donation provider
+      # At the moment either speedrun.com or a self hosted gdq tracker are supported
+      # supported values: gdq or srcom
+      - DONATION_PROVIDER=
+      # Requiered settings when donation provider is srcom
+      - MARATHON_SLUG=
+      #  Requiered settings when donation provider is gdq
+      - GDQ_TRACKER_URL=
+      - GDQ_TRACKER_EVENT_ID=
+      - GDQ_TRACKER_USERNAME=
+      - GDQ_TRACKER_PASSWORD=
+
   mongo:
     image: mongo
     volumes:

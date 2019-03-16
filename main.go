@@ -26,17 +26,18 @@ import (
 )
 
 var (
-	mgs                *mgo.Session
-	redisClient        *redis.Client
-	port               string
-	twitchClientID     string
-	twitchClientSecret string
-	twitchCallback     string
-	twitterKey         string
-	twitterSecret      string
-	twitterCallback    string
-	refreshInterval    int
-	marathonSlug       string
+	mgs                                          *mgo.Session
+	redisClient                                  *redis.Client
+	port                                         string
+	twitchClientID                               string
+	twitchClientSecret                           string
+	twitchCallback                               string
+	twitterKey                                   string
+	twitterSecret                                string
+	twitterCallback                              string
+	refreshInterval                              int
+	marathonSlug                                 string
+	gdqURL, gdqEventID, gdqUsername, gdqPassword string
 )
 
 type Server struct {
@@ -46,21 +47,8 @@ type Server struct {
 func init() {
 	mgs = getMongoSession()
 	redisClient = getRedisClient()
+	parseEnvVars()
 
-	// parse env vars
-	twitchClientID = os.Getenv("TWITCH_CLIENT_ID")
-	twitchClientSecret = os.Getenv("TWITCH_CLIENT_SECRET")
-	twitchCallback = os.Getenv("TWITCH_CALLBACK")
-	twitterKey = os.Getenv("TWITTER_KEY")
-	twitterSecret = os.Getenv("TWITTER_SECRET")
-	twitterCallback = os.Getenv("TWITTER_CALLBACK")
-	marathonSlug = os.Getenv("MARATHON_SLUG")
-	i, err := strconv.Atoi(os.Getenv("REFRESH_INTERVAL"))
-	if err != nil {
-		panic("REFRESH_INTERVAL has to be a valid int in ms")
-	}
-	refreshInterval = i
-	port = os.Getenv("HTTP_PORT")
 }
 
 func main() {
@@ -82,17 +70,29 @@ func startHTTPServer() {
 	log.Println("Initializing run controller")
 	runController := runs.NewRunController(baseController)
 
-	// donationsEnabled := false
-	// log.Printf("Enabling donations...")
-	// srDonationProvider, err := donationProviders.NewSRComDonationProvider(marathonSlug)
-	// if err != nil {
-	// 	log.Printf("Error during donation provider creation: %v", err)
-	// 	donationsEnabled = false
-	// }
+	var donProv donations.DonationProvider
+	donationsEnabled := true
+	var err error
 
-	gdqDonationProvider, _ := donationProviders.NewGDQDonationProvider("https://tracker.speedcon.eu/", "1", "_", "_")
+	if os.Getenv("DONATION_PROVIDER") == "gdq" {
+		log.Println("Creating new GDQ donation provider")
+		donProv, err = donationProviders.NewGDQDonationProvider(gdqURL, gdqEventID, gdqUsername, gdqPassword)
+		if err != nil {
+			log.Printf("Error during gdq donation provider creation: %v", err)
+			donationsEnabled = false
+		}
+	} else if os.Getenv("DONATION_PROVIDER") == "srcom" {
+		log.Println("Creating new speedrunc.om donation provider")
+		donProv, err = donationProviders.NewSRComDonationProvider(marathonSlug)
+		if err != nil {
+			log.Printf("Error during donation provider creation: %v", err)
+			donationsEnabled = false
+		}
 
-	donationController := donations.NewDonationController(baseController, gdqDonationProvider, true)
+	}
+
+	donationController := donations.NewDonationController(baseController, donProv, donationsEnabled)
+
 	log.Println("Starting websocket hub...")
 	go hub.Run()
 
@@ -216,4 +216,30 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		s.r.ServeHTTP(w, r)
 	}
+}
+
+func parseEnvVars() {
+	twitchClientID = os.Getenv("TWITCH_CLIENT_ID")
+	twitchClientSecret = os.Getenv("TWITCH_CLIENT_SECRET")
+	twitchCallback = os.Getenv("TWITCH_CALLBACK")
+	twitterKey = os.Getenv("TWITTER_KEY")
+	twitterSecret = os.Getenv("TWITTER_SECRET")
+	twitterCallback = os.Getenv("TWITTER_CALLBACK")
+	i, err := strconv.Atoi(os.Getenv("REFRESH_INTERVAL"))
+	if err != nil {
+		panic("REFRESH_INTERVAL has to be a valid int in ms")
+	}
+	refreshInterval = i
+	port = os.Getenv("HTTP_PORT")
+	if os.Getenv("DONATION_PROVIDER") == "gdq" {
+		gdqURL = os.Getenv("GDQ_TRACKER_URL")
+		gdqEventID = os.Getenv("GDQ_TRACKER_EVENT_ID")
+		gdqUsername = os.Getenv("GDQ_TRACKER_USERNAME")
+		gdqPassword = os.Getenv("GDQ_TRACKER_PASSWORD")
+	} else if os.Getenv("DONATION_PRODIVER") == "srcom" {
+		marathonSlug = os.Getenv("MARATHON_SLUG")
+	} else {
+		log.Println("Unkown donation provider. Donations disabled.")
+	}
+
 }

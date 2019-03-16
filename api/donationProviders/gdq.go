@@ -3,6 +3,7 @@ package donationProviders
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -123,6 +124,7 @@ func NewGDQDonationProvider(t, e, username, password string) (*GDQDonationProvid
 }
 
 func (gdq *GDQDonationProvider) login() error {
+	log.Println("Logging into GDQ tracker...")
 	res, err := gdq.client.Get(gdq.loginURL)
 	if err != nil {
 		return errors.New("Couldn't find login page")
@@ -161,6 +163,8 @@ func (gdq *GDQDonationProvider) login() error {
 		return errors.New("non 200 status code")
 	}
 
+	log.Println("Logged into GDQ tracker")
+
 	return nil
 
 }
@@ -182,6 +186,7 @@ func (gdq *GDQDonationProvider) GetTotalAmount() (float64, error) {
 
 // GetTotalDonations will return the amount of donations
 func (gdq *GDQDonationProvider) GetTotalDonations() (int, error) {
+
 	search, err := gdq.getEventInfo()
 	if err != nil {
 		return -1, err
