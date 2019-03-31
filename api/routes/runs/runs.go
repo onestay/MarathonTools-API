@@ -228,12 +228,12 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 	rc.base.UpdateActiveRuns()
 
 	go rc.checkForUpdate()
+	go rc.base.CL.ResetChecklist()
 
 	w.WriteHeader(http.StatusNoContent)
 
 	rc.base.WSCurrentUpdate()
 }
-
 func (rc *RunController) checkForUpdate() {
 	go func() {
 		var res []byte

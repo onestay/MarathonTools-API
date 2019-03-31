@@ -143,6 +143,15 @@ func (c *Checklist) ToggleItem(w http.ResponseWriter, r *http.Request, _ httprou
 	c.b.Response("", "no item defined", http.StatusBadRequest, w)
 }
 
+func (c *Checklist) ResetChecklist() {
+	for _, item := range c.Items {
+		item.Done = false
+	}
+
+	go c.b.WSChecklistUpdate()
+	c.Finished = false
+}
+
 // CheckDoneHTTP will return whether all the items in the checklist are done
 func (c *Checklist) CheckDoneHTTP(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res := struct {
