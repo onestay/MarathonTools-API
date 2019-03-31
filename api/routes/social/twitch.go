@@ -223,7 +223,9 @@ func (sc Controller) twitchUpdateInfo() error {
 func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	err := sc.twitchUpdateInfo()
 	if err != nil {
-		sc.base.Response("", "error sending twitter update", http.StatusInternalServerError, w)
+		sc.base.Response("", "error sending twitch update", http.StatusInternalServerError, w)
+		log.Println("Error updating twitch settings: ", err)
+		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)

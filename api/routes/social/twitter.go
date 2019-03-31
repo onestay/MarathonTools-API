@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/go-redis/redis"
@@ -64,7 +65,9 @@ func (sc Controller) TwitterSendUpdate(w http.ResponseWriter, r *http.Request, _
 	err := sc.twitterSendUpdate()
 	if err != nil {
 		sc.base.Response("", "error sending tweet", http.StatusInternalServerError, w)
+		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (sc Controller) twitterSendUpdate() error {
@@ -77,25 +80,25 @@ func (sc Controller) twitterSendUpdate() error {
 
 	json.Unmarshal(res, &t)
 
-	// c := sc.twitterInfo.Client(oauth1.NoContext, &t)
-	// uri, err := url.Parse("https://api.twitter.com/1.1/statuses/update.json")
+	c := sc.twitterInfo.Client(oauth1.NoContext, &t)
+	uri, err := url.Parse("https://api.twitter.com/1.1/statuses/update.json")
 
 	ts, err := sc.twitterExecuteTemplate()
 	if err != nil {
 		return err
 	}
 
-	// v := url.Values{}
-	// v.Add("status", ts)
-	// uri.RawQuery = v.Encode()
-	// httpRes, err := c.Post(uri.String(), "", nil)
-	// if err != nil {
-	// 	sc.base.LogError("Error sending tweet", err, true)
-	// }
+	v := url.Values{}
+	v.Add("status", ts)
+	uri.RawQuery = v.Encode()
+	httpRes, err := c.Post(uri.String(), "", nil)
+	if err != nil {
+		sc.base.LogError("Error sending tweet", err, true)
+	}
 	fmt.Println(ts)
-	// if httpRes.StatusCode != 200 {
-	// 	return fmt.Errorf("Non 200 status code returned from twitter. Status code is %v", httpRes.StatusCode)
-	// }
+	if httpRes.StatusCode != 200 {
+		return fmt.Errorf("Non 200 status code returned from twitter. Status code is %v", httpRes.StatusCode)
+	}
 
 	return nil
 }
