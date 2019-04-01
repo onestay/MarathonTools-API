@@ -157,7 +157,11 @@ func startHTTPServer() {
 	r.GET("/checklist/done", baseController.CL.CheckDoneHTTP)
 	r.GET("/checklist", baseController.CL.GetChecklist)
 
-	r.POST("/schedule/update", baseController.UpdateScheduleHTTP)
+	// settings stuff
+	r.POST("/settings", baseController.Settings.SetSettings)
+	r.GET("/settings", baseController.Settings.GetSettings)
+
+	// r.POST("/schedule/update", baseController.UpdateScheduleHTTP)
 	log.Println("server running on " + port)
 	log.Fatal(http.ListenAndServe(port, &Server{r}))
 }

@@ -27,6 +27,7 @@ type Controller struct {
 	// SocialUpdatesChan is used to communicate with the socialController on twitter and twitch updates
 	SocialUpdatesChan chan int
 	CL                *Checklist
+	Settings          *SettingsProvider
 }
 
 type httpResponse struct {
@@ -69,6 +70,7 @@ func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client)
 		SocialUpdatesChan: make(chan int, 1),
 	}
 	c.CL = NewChecklist(c)
+	c.Settings = InitSettings(c)
 	c.UpdateActiveRuns()
 	c.UpdateUpNext()
 	return c

@@ -77,6 +77,36 @@ func (sc Controller) TwitchGetToken(w http.ResponseWriter, r *http.Request, _ ht
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (sc Controller) twitchUpdateChannelID() {
+	tr := TwitchResponse{}
+
+	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			log.Println("tried updating twitch update channel but no twitch auth data")
+			return
+		}
+		log.Println("tried updating twitch update channel, error while getting auth data", err)
+		return
+	}
+
+	json.Unmarshal(b, &tr)
+
+	resChan := make(chan bool)
+
+	go sc.getChannelID(resChan, &tr)
+	<-resChan
+
+	bU, _ := json.Marshal(tr)
+
+	err = sc.base.RedisClient.Set("twitchAuth", bU, 0).Err()
+	if err != nil {
+		log.Printf("Error in setting auth info after updatechannelid, err: %v", err)
+		return
+	}
+
+}
+
 // TwitchCheckForAuth will check if there is an access token available. It doesn't necessairly say if it's expired or invalid
 func (sc Controller) TwitchCheckForAuth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	_, err := sc.base.RedisClient.Get("twitchAuth").Result()

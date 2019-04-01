@@ -72,6 +72,8 @@ func (sc Controller) comReciever() {
 			}
 		} else if i == 0 {
 			fmt.Println(i)
+		} else if i == 3 {
+			sc.twitchUpdateChannelID()
 		}
 	}
 }

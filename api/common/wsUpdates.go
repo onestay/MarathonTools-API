@@ -21,11 +21,24 @@ func (c Controller) SendInitialData() []byte {
 		TimerState     TimerState   `json:"timerState"`
 		UpNextRun      models.Run   `json:"upNext"`
 		ChecklistItems []*item      `json:"checklistItems"`
-	}{"initalData", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex, c.TimerState, *c.UpNext, c.CL.Items}
+		Settings       Settings     `json:"settings"`
+	}{"initalData", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex, c.TimerState, *c.UpNext, c.CL.Items, *c.Settings.S}
 
 	d, _ := json.Marshal(data)
 
 	return d
+}
+
+// WSSettingUpdate sends a settings update
+func (c Controller) WSSettingUpdate() {
+	data := struct {
+		DataType string   `json:"dataType"`
+		Settings Settings `json:"settings"`
+	}{"settingsUpdate", *c.Settings.S}
+
+	d, _ := json.Marshal(data)
+
+	c.WS.Broadcast <- d
 }
 
 // WSRunUpdate sends an update for all runs over the websocket and current runs over the websocket.
@@ -51,8 +64,8 @@ func (c Controller) WSRunUpdate() {
 // WSUpNextUpdate will set the up next run
 func (c Controller) WSUpNextUpdate() {
 	data := struct {
-		DataType  string     `json:"dataType,omitempty"`
-		UpNextRun models.Run `json:"upNextRun,omitempty"`
+		DataType  string     `json:"dataType"`
+		UpNextRun models.Run `json:"upNextRun"`
 	}{"upNextUpdate", *c.UpNext}
 
 	d, _ := json.Marshal(data)

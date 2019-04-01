@@ -46,48 +46,28 @@ type twitchTitleOptions struct {
 // this will mostly use the old twitch api since most of the endpoints I need aren't available in the new one
 // I will try to use the new one as much as possible tho
 const (
-	authorizeURL      = "https://api.twitch.tv/kraken/oauth2/authorize"
-	tokenURL          = "https://api.twitch.tv/kraken/oauth2/token"
-	revokeURL         = "https://api.twitch.tv/kraken/oauth2/revoke"
-	channelURL        = "https://api.twitch.tv/kraken/channel"
-	updateChannelURL  = "https://api.twitch.tv/kraken/channels"
-	getStreamURL      = "https://api.twitch.tv/helix/streams"
-	refreshTokenURL   = "https://id.twitch.tv/oauth2/token"
-	playCommercialURL = "https://api.twitch.tv/kraken/channels"
+	authorizeURL        = "https://api.twitch.tv/kraken/oauth2/authorize"
+	tokenURL            = "https://api.twitch.tv/kraken/oauth2/token"
+	revokeURL           = "https://api.twitch.tv/kraken/oauth2/revoke"
+	channelURL          = "https://api.twitch.tv/kraken/channel"
+	updateChannelURL    = "https://api.twitch.tv/kraken/channels"
+	getStreamURL        = "https://api.twitch.tv/helix/streams"
+	refreshTokenURL     = "https://id.twitch.tv/oauth2/token"
+	playCommercialURL   = "https://api.twitch.tv/kraken/channels"
+	getChannelByNameURL = "https://api.twitch.tv/helix/users"
 )
 
 func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
 	client := http.Client{}
 
-	req, err := http.NewRequest("GET", channelURL, nil)
-	if err != nil {
-		log.Println("Error creating request to get Channel ID")
-	}
-
-	req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-	req.Header.Add("Authorization", "OAuth "+t.AccessToken)
-	req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
-
-	var resp *http.Response
-
-	resp, err = client.Do(req)
-	if err != nil {
-		log.Printf("Error doing request. Err: %v", err)
-	}
-
-	if resp.StatusCode == 400 {
-		token, err := sc.twitchRefreshToken()
-		if err != nil {
-			sc.base.LogError("while trying to get refresh token", err, true)
-			return
-		}
+	if len(sc.base.Settings.S.TwitchUpdateChannel) == 0 {
 		req, err := http.NewRequest("GET", channelURL, nil)
 		if err != nil {
 			log.Println("Error creating request to get Channel ID")
 		}
 
 		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-		req.Header.Add("Authorization", "OAuth "+token)
+		req.Header.Add("Authorization", "OAuth "+t.AccessToken)
 		req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
 
 		var resp *http.Response
@@ -98,19 +78,71 @@ func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
 		}
 
 		if resp.StatusCode == 400 {
-			sc.base.LogError("couldn't get channel id even after successfull refresh token refresh. Bad auth", err, true)
-			return
+			token, err := sc.twitchRefreshToken()
+			if err != nil {
+				sc.base.LogError("while trying to get refresh token", err, true)
+				return
+			}
+			req, err := http.NewRequest("GET", channelURL, nil)
+			if err != nil {
+				log.Println("Error creating request to get Channel ID")
+			}
+
+			req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
+			req.Header.Add("Authorization", "OAuth "+token)
+			req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
+
+			var resp *http.Response
+
+			resp, err = client.Do(req)
+			if err != nil {
+				log.Printf("Error doing request. Err: %v", err)
+			}
+
+			if resp.StatusCode == 400 {
+				sc.base.LogError("couldn't get channel id even after successfull refresh token refresh. Bad auth", err, true)
+				return
+			}
 		}
+
+		id := struct {
+			ID string `json:"_id"`
+		}{}
+
+		json.NewDecoder(resp.Body).Decode(&id)
+
+		t.ChannelID = id.ID
+
+		res <- true
+	} else {
+		req, err := http.NewRequest("GET", getChannelByNameURL+"?login="+sc.base.Settings.S.TwitchUpdateChannel, nil)
+		if err != nil {
+			log.Println("Error creating request to get channel id with different name")
+		}
+
+		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
+
+		resp, err := client.Do(req)
+
+		if resp.StatusCode != 200 {
+			log.Println("non 200 status code while trying to get twitch channel id")
+		}
+
+		id := struct {
+			Data []struct {
+				ID string `json:"id"`
+			} `json:"data"`
+		}{}
+
+		json.NewDecoder(resp.Body).Decode(&id)
+
+		defer resp.Body.Close()
+
+		t.ChannelID = id.Data[0].ID
+
+		res <- true
 	}
 
-	id := struct {
-		ID string `json:"_id"`
-	}{}
-
-	json.NewDecoder(resp.Body).Decode(&id)
-	t.ChannelID = id.ID
-
-	res <- true
 }
 
 func (sc Controller) twitchUpdateInfo() error {
