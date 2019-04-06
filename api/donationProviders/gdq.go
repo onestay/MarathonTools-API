@@ -120,6 +120,18 @@ func NewGDQDonationProvider(t, e, username, password string) (*GDQDonationProvid
 	gdq.GetDonations()
 	// tokenizer := html.NewTokenizer(res.Body)
 
+	// relog into gdq tracker every 90 minutes
+	// ticker := time.NewTicker(1 * time.Minute)
+
+	// go func() {
+	// 	for {
+	// 		<-ticker.C
+	// 		gdq.login()
+	// 		fmt.Println("relogged into GDQ tracker")
+	// 		uri, _ := url.Parse("https://tracker.speedcon.eu/")
+	// 		fmt.Println(client.Jar.Cookies(uri))
+	// 	}
+	// }()
 	return &gdq, nil
 }
 
@@ -175,7 +187,9 @@ func (gdq *GDQDonationProvider) GetTotalAmount() (float64, error) {
 	if err != nil {
 		return -1, err
 	}
-
+	if search == nil {
+		return -1, errors.New("empty donation struct")
+	}
 	amount, err := strconv.ParseFloat(search.Agg.Amount, 64)
 	if err != nil {
 		return -1, err

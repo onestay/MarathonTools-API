@@ -137,7 +137,10 @@ func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
 		json.NewDecoder(resp.Body).Decode(&id)
 
 		defer resp.Body.Close()
-
+		if len(id.Data) == 0 {
+			log.Println("couldn't find channel with name ", sc.base.Settings.S.TwitchUpdateChannel)
+			return
+		}
 		t.ChannelID = id.Data[0].ID
 
 		res <- true

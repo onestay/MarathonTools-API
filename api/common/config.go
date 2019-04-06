@@ -52,9 +52,11 @@ func (s *SettingsProvider) SetSettings(w http.ResponseWriter, r *http.Request, _
 	json.NewDecoder(r.Body).Decode(&newSettings)
 
 	s.S = &newSettings
-	s.b.SocialUpdatesChan <- 3
+	go func() {
+		s.b.SocialUpdatesChan <- 3
+	}()
 	go s.b.WSSettingUpdate()
-	s.saveToRedis()
+	go s.saveToRedis()
 }
 
 // GetSettings returns all settings
