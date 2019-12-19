@@ -2,3 +2,4 @@ vendor
 gin-bin
 *.exe
 docker-compose.yml
+MarathonTools-API
