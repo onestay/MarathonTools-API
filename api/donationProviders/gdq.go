@@ -83,7 +83,7 @@ type GDQDonationProvider struct {
 
 // NewGDQDonationProvider will initialize and return a new GDQ Tracker Donation provider where t is the tracker URL and e is the event id
 func NewGDQDonationProvider(t, e, username, password string) (*GDQDonationProvider, error) {
-	res, err := http.Get(t + e + "?json")
+	res, err := http.Get(t + "/event/" + e + "?json")
 	if err != nil {
 		return nil, errors.New("Couldn't find tracker")
 	}
@@ -209,7 +209,7 @@ func (gdq *GDQDonationProvider) GetTotalDonations() (int, error) {
 	return search.Agg.Count, nil
 }
 func (gdq *GDQDonationProvider) getEventInfo() (*gdqSearch, error) {
-	res, err := http.Get(gdq.trackerURL + gdq.eventID + "?json")
+	res, err := http.Get(gdq.trackerURL + "/event/" + gdq.eventID + "?json")
 	if err != nil || res.StatusCode != 200 {
 		return nil, err
 	}

@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  api:
+    build: .
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      - TWITCH_CLIENT_ID=
+      - TWITCH_CLIENT_SECRET=
+      - TWITCH_CALLBACK=
+      - TWITTER_KEY=
+      - TWITTER_SECRET=
+      - TWITTER_CALLBACK=
+      - REFRESH_INTERVAL=100
+      - HTTP_PORT=:3000
+      # DONATION_PROVIDER specifies the donation provider
+      # At the moment either speedrun.com or a self hosted gdq tracker are supported
+      # supported values: gdq or srcom
+      - DONATION_PROVIDER=gdq
+      # Requiered settings when donation provider is srcom
+      - MARATHON_SLUG=
+      #  Requiered settings when donation provider is gdq
+      - GDQ_TRACKER_URL=
+      - GDQ_TRACKER_EVENT_ID=
+      - GDQ_TRACKER_USERNAME=
+      - GDQ_TRACKER_PASSWORD=
+    
+  mongo:
+    image: mongo
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+  redis:
+    image: redis
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+volumes:
+  mongo-data:
+  redis-data:

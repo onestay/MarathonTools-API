@@ -50,7 +50,7 @@ func (c *Controller) TimerStart(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 	go func() {
-		if c.b.CL.Finished {
+		if c.b.CL.Finished || len(c.b.CL.Items) == 0 {
 			go c.b.UpdateUpNext()
 		}
 	}()
