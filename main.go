@@ -168,6 +168,9 @@ func startHTTPServer() {
 	r.GET("/settings", baseController.Settings.GetSettings)
 
 	// r.POST("/schedule/update", baseController.UpdateScheduleHTTP)
+	if len(port) == 0 {
+		port = ":3000"
+	}
 	log.Println("server running on " + port)
 	log.Fatal(http.ListenAndServe(port, &Server{r}))
 }
