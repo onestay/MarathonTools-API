@@ -52,7 +52,7 @@ func init() {
 }
 
 func main() {
-	log.Println("Checking for runs to be imported...")
+	log.Println("Checking for runs to be imported....")
 	importRuns()
 	startHTTPServer()
 	// os.Getenv("jsonruns") == "true"
