@@ -168,7 +168,6 @@ func startHTTPServer() {
 	r.POST("/settings", baseController.Settings.SetSettings)
 	r.GET("/settings", baseController.Settings.GetSettings)
 
-	// r.POST("/schedule/update", baseController.UpdateScheduleHTTP)
 	if len(port) == 0 {
 		port = ":3000"
 	}
