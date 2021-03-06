@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-redis/redis"
 
+	"github.com/joho/godotenv"
 	"github.com/onestay/MarathonTools-API/api/routes/social"
 
 	"github.com/julienschmidt/httprouter"
@@ -45,10 +46,13 @@ type Server struct {
 }
 
 func init() {
-	mgs = getMongoSession()
-	redisClient = getRedisClient()
-	parseEnvVars()
-
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Error loading .env file. Falling back to parsing env vars")
+		parseEnvVars()
+	}
+	mgs = getMongoSession(os.Getenv("MONGO_SERVER"))
+	redisClient = getRedisClient(os.Getenv("REDIS_SERVER"))
 }
 
 func main() {
@@ -88,7 +92,9 @@ func startHTTPServer() {
 			log.Printf("Error during donation provider creation: %v", err)
 			donationsEnabled = false
 		}
-
+	} else {
+		log.Print("No donation provider specified")
+		donationsEnabled = false
 	}
 
 	donationController := donations.NewDonationController(baseController, donProv, donationsEnabled)
@@ -166,8 +172,8 @@ func startHTTPServer() {
 	log.Fatal(http.ListenAndServe(port, &Server{r}))
 }
 
-func getMongoSession() *mgo.Session {
-	s, err := mgo.Dial("mongodb://mongo")
+func getMongoSession(url string) *mgo.Session {
+	s, err := mgo.Dial(url)
 	if err != nil {
 		panic("Couldn't establish mgo session " + err.Error())
 	}
@@ -175,9 +181,9 @@ func getMongoSession() *mgo.Session {
 	return s
 }
 
-func getRedisClient() *redis.Client {
+func getRedisClient(url string) *redis.Client {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "redis:6379",
+		Addr:     url + ":6379",
 		Password: "",
 		DB:       0,
 	})
