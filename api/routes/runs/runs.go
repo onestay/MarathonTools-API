@@ -234,6 +234,31 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 
 	rc.base.WSCurrentUpdate()
 }
+
+// UploadRunJSON will take a json and import the runs
+func (rc *RunController) UploadRunJSON(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	runs := []models.Run{}
+
+	err := json.NewDecoder(r.Body).Decode(&runs)
+	if err != nil {
+		rc.base.Response("", "couldn't unmarshal body", http.StatusInternalServerError, w)
+		log.Printf("Error in UploadRunJSON: %v", err)
+		return
+	}
+
+	rc.base.MGS.DB("marathon").C("runs").RemoveAll(nil)
+
+	for _, run := range runs {
+		run.RunID = bson.NewObjectId()
+		err := rc.base.MGS.DB("marathon").C("runs").Insert(run)
+		if err != nil {
+			panic("error adding run from UploadRunJSON into db")
+		}
+	}
+
+	log.Printf("imported %v runs", len(runs))
+	w.WriteHeader(http.StatusNoContent)
+}
 func (rc *RunController) checkForUpdate() {
 	go func() {
 		var res []byte

@@ -126,6 +126,7 @@ func startHTTPServer() {
 	r.POST("/run/switch", runController.SwitchRun)
 
 	r.POST("/run/layout", runController.RefreshLayout)
+	r.POST("/run/upload", runController.UploadRunJSON)
 	// social stuff
 	r.GET("/social/twitch/oauthurl", socialController.TwitchOAuthURL)
 	r.GET("/social/twitch/verify", socialController.TwitchCheckForAuth)
@@ -195,6 +196,7 @@ func getRedisClient(url string) *redis.Client {
 }
 
 func importRuns() {
+	log.Print("Adding runs using the run file is deprecated. Please use the /run/upload endpoint ")
 	runs := []models.Run{}
 	runFile, err := os.Open("./config/runs.json")
 	if err != nil {
