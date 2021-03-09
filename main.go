@@ -39,6 +39,7 @@ var (
 	refreshInterval                              int
 	marathonSlug                                 string
 	gdqURL, gdqEventID, gdqUsername, gdqPassword string
+	mgoURL, redisURL                             string
 )
 
 type Server struct {
@@ -48,11 +49,13 @@ type Server struct {
 func init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Error loading .env file. Falling back to parsing env vars")
-		parseEnvVars()
+		log.Println("Error loading .env file.")
 	}
-	mgs = getMongoSession(os.Getenv("MONGO_SERVER"))
-	redisClient = getRedisClient(os.Getenv("REDIS_SERVER"))
+	parseEnvVars()
+	log.Printf("Connecting to mgo server at %v", mgoURL)
+	mgs = getMongoSession()
+	log.Printf("Connecting to redis server at %v", redisURL)
+	redisClient = getRedisClient()
 }
 
 func main() {
@@ -168,15 +171,12 @@ func startHTTPServer() {
 	r.POST("/settings", baseController.Settings.SetSettings)
 	r.GET("/settings", baseController.Settings.GetSettings)
 
-	if len(port) == 0 {
-		port = ":3000"
-	}
 	log.Println("server running on " + port)
 	log.Fatal(http.ListenAndServe(port, &Server{r}))
 }
 
-func getMongoSession(url string) *mgo.Session {
-	s, err := mgo.Dial(url)
+func getMongoSession() *mgo.Session {
+	s, err := mgo.Dial(mgoURL)
 	if err != nil {
 		panic("Couldn't establish mgo session " + err.Error())
 	}
@@ -184,9 +184,9 @@ func getMongoSession(url string) *mgo.Session {
 	return s
 }
 
-func getRedisClient(url string) *redis.Client {
+func getRedisClient() *redis.Client {
 	client := redis.NewClient(&redis.Options{
-		Addr:     url + ":6379",
+		Addr:     redisURL + ":6379",
 		Password: "",
 		DB:       0,
 	})
@@ -233,6 +233,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseEnvVars() {
+	mgoURL = os.Getenv("MONGO_SERVER")
+	redisURL = os.Getenv("REDIS_SERVER")
 	twitchClientID = os.Getenv("TWITCH_CLIENT_ID")
 	twitchClientSecret = os.Getenv("TWITCH_CLIENT_SECRET")
 	twitchCallback = os.Getenv("TWITCH_CALLBACK")
@@ -240,11 +242,18 @@ func parseEnvVars() {
 	twitterSecret = os.Getenv("TWITTER_SECRET")
 	twitterCallback = os.Getenv("TWITTER_CALLBACK")
 	i, err := strconv.Atoi(os.Getenv("REFRESH_INTERVAL"))
-	if err != nil {
-		panic("REFRESH_INTERVAL has to be a valid int in ms")
+	if err != nil && len(os.Getenv("REFRESH_INTERVAL")) != 0 {
+		log.Println("Error parsing REFRESH_INTERVAL defaulting to 100ms")
+		i = 100
+	} else if err != nil {
+		i = 100
 	}
 	refreshInterval = i
 	port = os.Getenv("HTTP_PORT")
+	if len(port) == 0 {
+		port = ":3000"
+	}
+	
 	if os.Getenv("DONATION_PROVIDER") == "gdq" {
 		gdqURL = os.Getenv("GDQ_TRACKER_URL")
 		gdqEventID = os.Getenv("GDQ_TRACKER_EVENT_ID")
@@ -252,8 +261,10 @@ func parseEnvVars() {
 		gdqPassword = os.Getenv("GDQ_TRACKER_PASSWORD")
 	} else if os.Getenv("DONATION_PRODIVER") == "srcom" {
 		marathonSlug = os.Getenv("MARATHON_SLUG")
+	} else if len(os.Getenv("DONATION_PROVIDER")) == 0 {
+		log.Println("No donations provider specified. Donations disabled.")
 	} else {
-		log.Println("Unkown donation provider. Donations disabled.")
+		log.Printf("Unknown donation provider %v. Donations disabled.", os.Getenv("DONATION_PROVIDER"))
 	}
 
 }
