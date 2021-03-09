@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -10,7 +9,6 @@ import (
 	"github.com/onestay/MarathonTools-API/api/routes/donations"
 
 	"github.com/onestay/MarathonTools-API/api/donationProviders"
-	"github.com/onestay/MarathonTools-API/api/models"
 	"github.com/onestay/MarathonTools-API/api/routes/timer"
 
 	"github.com/go-redis/redis"
@@ -23,7 +21,6 @@ import (
 	"github.com/onestay/MarathonTools-API/api/routes/runs"
 	"github.com/onestay/MarathonTools-API/ws"
 	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -59,10 +56,7 @@ func init() {
 }
 
 func main() {
-	log.Println("Checking for runs to be imported....")
-	importRuns()
 	startHTTPServer()
-	// os.Getenv("jsonruns") == "true"
 }
 
 func startHTTPServer() {
@@ -194,31 +188,6 @@ func getRedisClient() *redis.Client {
 	return client
 }
 
-func importRuns() {
-	log.Print("Adding runs using the run file is deprecated. Please use the /run/upload endpoint ")
-	runs := []models.Run{}
-	runFile, err := os.Open("./config/runs.json")
-	if err != nil {
-		log.Println("no runs file")
-		return
-	}
-
-	json.NewDecoder(runFile).Decode(&runs)
-
-	for _, run := range runs {
-		run.RunID = bson.NewObjectId()
-		err := mgs.DB("marathon").C("runs").Insert(run)
-		if err != nil {
-			panic("error adding run from json into db")
-		}
-	}
-	log.Printf("imported %v runs", len(runs))
-	err = os.Rename("./config/runs.json", "./config/runs_imported.json")
-	if err != nil {
-		log.Println("error renaming runs file. Please rename manually so runs aren't imported on restart")
-	}
-}
-
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, PATCH, OPTIONS, HEAD")
@@ -253,7 +222,7 @@ func parseEnvVars() {
 	if len(port) == 0 {
 		port = ":3000"
 	}
-	
+
 	if os.Getenv("DONATION_PROVIDER") == "gdq" {
 		gdqURL = os.Getenv("GDQ_TRACKER_URL")
 		gdqEventID = os.Getenv("GDQ_TRACKER_EVENT_ID")
