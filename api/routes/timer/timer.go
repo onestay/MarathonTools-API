@@ -19,12 +19,24 @@ type Controller struct {
 	lastPaused      time.Time
 }
 
+func (c *Controller) registerRoutes(r *httprouter.Router)  {
+	r.POST("/timer/start", c.TimerStart)
+	r.POST("/timer/pause", c.TimerPause)
+	r.POST("/timer/resume", c.TimerResume)
+	r.POST("/timer/finish", c.TimerFinish)
+	r.POST("/timer/player/finish/:id", c.TimerPlayerFinish)
+	r.POST("/timer/reset", c.TimerReset)
+
+}
+
 // NewTimeController initializes and returns a new time controller. The refreshInterval is in ms
-func NewTimeController(b *common.Controller, refreshInterval int) *Controller {
-	return &Controller{
+func NewTimeController(b *common.Controller, refreshInterval int, router *httprouter.Router) {
+	tc := Controller{
 		b:               b,
 		refreshInterval: refreshInterval,
 	}
+
+	tc.registerRoutes(router)
 }
 
 func (c *Controller) timerLoop() {

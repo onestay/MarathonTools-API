@@ -65,11 +65,11 @@ func startHTTPServer() {
 	log.Println("Initializing base controller...")
 	baseController := common.NewController(hub, mgs, 0, redisClient)
 	log.Println("Initializing social controller...")
-	socialController := social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, baseController)
+	social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, baseController, r)
 	log.Println("Initializing time controller...")
-	timeController := timer.NewTimeController(baseController, refreshInterval)
+	timer.NewTimeController(baseController, refreshInterval, r)
 	log.Println("Initializing run controller")
-	runController := runs.NewRunController(baseController)
+	runs.NewRunController(baseController, r)
 
 	var donProv donations.DonationProvider
 	donationsEnabled := true
@@ -109,50 +109,6 @@ func startHTTPServer() {
 	r.GET("/donations/total/amount", donationController.GetTotalDonations)
 	r.GET("/donations/total/update/start", donationController.StartTotalUpdate)
 	r.GET("/donations/total/update/stop", donationController.StopTotalUpdate)
-	// routes for run endpoint
-	r.GET("/run/get/all", runController.GetRuns)
-	r.GET("/run/get/single/:id", runController.GetRun)
-	r.GET("/run/get/active", runController.ActiveRuns)
-
-	r.DELETE("/run/delete/:id", runController.DeleteRun)
-
-	r.PATCH("/run/update/:id", runController.UpdateRun)
-
-	r.POST("/run/move/:id/:after", runController.MoveRun)
-	r.POST("/run/add/single", runController.AddRun)
-	r.POST("/run/switch", runController.SwitchRun)
-
-	r.POST("/run/layout", runController.RefreshLayout)
-	r.POST("/run/upload", runController.UploadRunJSON)
-	// social stuff
-	r.GET("/social/twitch/oauthurl", socialController.TwitchOAuthURL)
-	r.GET("/social/twitch/verify", socialController.TwitchCheckForAuth)
-	r.POST("/social/twitch/auth", socialController.TwitchGetToken)
-	r.DELETE("/social/twitch/token", socialController.TwitchDeleteToken)
-	r.GET("/social/twitch/executetemplate", socialController.TwitchExecuteTemplate)
-	r.PUT("/social/twitch/update", socialController.TwitchUpdateInfo)
-	r.PUT("/social/twitch/settings", socialController.TwitchSetSettings)
-	r.GET("/social/twitch/settings", socialController.TwitchGetSettings)
-	r.POST("/social/twitch/commercial", socialController.TwitchPlayCommercial)
-
-	r.GET("/social/twitter/oauthurl", socialController.TwitterOAuthURL)
-	r.GET("/social/twitter/verify", socialController.TwitterCheckForAuth)
-	r.POST("/social/twitter/auth", socialController.TwitterCallback)
-	r.DELETE("/social/twitter/token", socialController.TwitterDeleteToken)
-	r.POST("/social/twitter/update", socialController.TwitterSendUpdate)
-	r.POST("/social/twitter/template", socialController.TwitterAddTemplate)
-	r.GET("/social/twitter/template", socialController.TwitterGetTemplates)
-	r.DELETE("/social/twitter/template/:index", socialController.TwitterDeleteTemplate)
-	r.PUT("/social/twitter/settings", socialController.TwitterSetSettings)
-	r.GET("/social/twitter/settings", socialController.TwitterGetSettings)
-
-	// timer stuff
-	r.POST("/timer/start", timeController.TimerStart)
-	r.POST("/timer/pause", timeController.TimerPause)
-	r.POST("/timer/resume", timeController.TimerResume)
-	r.POST("/timer/finish", timeController.TimerFinish)
-	r.POST("/timer/player/finish/:id", timeController.TimerPlayerFinish)
-	r.POST("/timer/reset", timeController.TimerReset)
 
 	// checklist stuff
 	r.POST("/checklist/add", baseController.CL.AddItem)

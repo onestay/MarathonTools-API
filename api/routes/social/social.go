@@ -3,6 +3,7 @@ package social
 import (
 	"fmt"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/onestay/MarathonTools-API/api/common"
 
 	"github.com/dghubble/oauth1"
@@ -30,8 +31,32 @@ type twitterInfo struct {
 	Endpoint       oauth1.Endpoint
 }
 
+func (sc Controller) registerRoutes(r *httprouter.Router)  {
+	r.GET("/social/twitch/oauthurl", sc.TwitchOAuthURL)
+	r.GET("/social/twitch/verify", sc.TwitchCheckForAuth)
+	r.POST("/social/twitch/auth", sc.TwitchGetToken)
+	r.DELETE("/social/twitch/token", sc.TwitchDeleteToken)
+	r.GET("/social/twitch/executetemplate", sc.TwitchExecuteTemplate)
+	r.PUT("/social/twitch/update", sc.TwitchUpdateInfo)
+	r.PUT("/social/twitch/settings", sc.TwitchSetSettings)
+	r.GET("/social/twitch/settings", sc.TwitchGetSettings)
+	r.POST("/social/twitch/commercial", sc.TwitchPlayCommercial)
+
+	r.GET("/social/twitter/oauthurl", sc.TwitterOAuthURL)
+	r.GET("/social/twitter/verify", sc.TwitterCheckForAuth)
+	r.POST("/social/twitter/auth", sc.TwitterCallback)
+	r.DELETE("/social/twitter/token", sc.TwitterDeleteToken)
+	r.POST("/social/twitter/update", sc.TwitterSendUpdate)
+	r.POST("/social/twitter/template", sc.TwitterAddTemplate)
+	r.GET("/social/twitter/template", sc.TwitterGetTemplates)
+	r.DELETE("/social/twitter/template/:index", sc.TwitterDeleteTemplate)
+	r.PUT("/social/twitter/settings", sc.TwitterSetSettings)
+	r.GET("/social/twitter/settings", sc.TwitterGetSettings)
+
+}
+
 // NewSocialController will return a new social controller
-func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback string, b *common.Controller) *Controller {
+func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback string, b *common.Controller, router *httprouter.Router) {
 	t := &twitchInfo{
 		ClientID:     twitchClientID,
 		ClientSecret: twitchClientSecret,
@@ -54,7 +79,7 @@ func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twi
 
 	go c.comReciever()
 
-	return &c
+	c.registerRoutes(router)
 }
 
 func (sc Controller) comReciever() {

@@ -20,11 +20,31 @@ type RunController struct {
 	base *common.Controller
 }
 
+func (rc RunController) registerRoutes(r *httprouter.Router) {
+	r.GET("/run/get/all", rc.GetRuns)
+	r.GET("/run/get/single/:id", rc.GetRun)
+	r.GET("/run/get/active", rc.ActiveRuns)
+
+	r.DELETE("/run/delete/:id", rc.DeleteRun)
+
+	r.PATCH("/run/update/:id", rc.UpdateRun)
+
+	r.POST("/run/move/:id/:after", rc.MoveRun)
+	r.POST("/run/add/single", rc.AddRun)
+	r.POST("/run/switch", rc.SwitchRun)
+
+	r.POST("/run/layout", rc.RefreshLayout)
+	r.POST("/run/upload", rc.UploadRunJSON)
+
+}
+
 // NewRunController returns a new run controller
-func NewRunController(b *common.Controller) *RunController {
-	return &RunController{
+func NewRunController(b *common.Controller, router *httprouter.Router)  {
+	r := RunController{
 		base: b,
 	}
+
+	r.registerRoutes(router)
 }
 
 // RefreshLayout will send a WsCurrentUpdate to refresh the layout
