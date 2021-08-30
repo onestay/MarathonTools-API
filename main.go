@@ -83,7 +83,7 @@ func startHTTPServer() {
 			donationsEnabled = false
 		}
 	} else if os.Getenv("DONATION_PROVIDER") == "srcom" {
-		log.Println("Creating new speedrunc.om donation provider")
+		log.Println("Creating new speedrun.com donation provider")
 		donProv, err = donationProviders.NewSRComDonationProvider(marathonSlug)
 		if err != nil {
 			log.Printf("Error during donation provider creation: %v", err)
