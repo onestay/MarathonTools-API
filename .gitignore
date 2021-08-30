@@ -3,3 +3,4 @@ gin-bin
 *.exe
 MarathonTools-API
 .vscode
+__debug_bin
