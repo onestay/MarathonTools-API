@@ -169,6 +169,11 @@ func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps htt
 	w.WriteHeader(http.StatusNoContent)
 
 	rc.base.WSRunsOnlyUpdate()
+	if updatedRun.RunID == rc.base.CurrentRun.RunID {
+		rc.base.CurrentRun = &updatedRun
+		rc.base.WSCurrentUpdate()
+	}
+
 }
 
 // MoveRun takes the run by id and moves it after the run provided by after
