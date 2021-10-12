@@ -4,3 +4,4 @@ gin-bin
 MarathonTools-API
 .vscode
 __debug_bin
+social_auth/target
