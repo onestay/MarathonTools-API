@@ -14,10 +14,11 @@ import (
 
 // Controller holds all the info and methods
 type Controller struct {
-	twitchInfo  *twitchInfo
-	twitterInfo *oauth1.Config
-	base        *common.Controller
-	socialAuth  *socialAuthInfo
+	twitchInfo          *twitchInfo
+	twitterInfo         *oauth1.Config
+	base                *common.Controller
+	socialAuth          *socialAuthInfo
+	featuredChannelsKey string
 }
 
 type twitchInfo struct {
@@ -90,7 +91,7 @@ func (sc Controller) registerRoutes(r *httprouter.Router) {
 }
 
 // NewSocialController will return a new social controller
-func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, socialAuthURL, socialAuthKey string, b *common.Controller, router *httprouter.Router) {
+func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, socialAuthURL, socialAuthKey, featuredChannelsKey string, b *common.Controller, router *httprouter.Router) {
 	t := &twitchInfo{
 		ClientID:     twitchClientID,
 		ClientSecret: twitchClientSecret,
@@ -113,6 +114,7 @@ func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twi
 			url: socialAuthURL,
 			key: socialAuthKey,
 		},
+		featuredChannelsKey: featuredChannelsKey,
 	}
 
 	go c.comReciever()
@@ -135,6 +137,11 @@ func (sc Controller) comReciever() {
 			}
 		} else if i == 0 {
 			fmt.Println(i)
+		} else if i == 0x50 {
+			err := sc.UpdateFeaturedChannels()
+			if err != nil {
+				sc.base.LogError("while updating featured channels", err, true)
+			}
 		}
 	}
 }

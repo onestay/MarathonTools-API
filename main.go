@@ -38,6 +38,7 @@ var (
 	gdqURL, gdqEventID, gdqUsername, gdqPassword string
 	mgoURL, redisURL                             string
 	socialAuthURL, socialAuthKey                 string
+	featuredChannelsKey                          string
 )
 
 type Server struct {
@@ -66,7 +67,7 @@ func startHTTPServer() {
 	log.Println("Initializing base controller...")
 	baseController := common.NewController(hub, mgs, 0, redisClient)
 	log.Println("Initializing social controller...")
-	social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, socialAuthURL, socialAuthKey, baseController, r)
+	social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, socialAuthURL, socialAuthKey, featuredChannelsKey, baseController, r)
 	log.Println("Initializing time controller...")
 	timer.NewTimeController(baseController, refreshInterval, r)
 	log.Println("Initializing run controller")
@@ -194,5 +195,7 @@ func parseEnvVars() {
 	} else {
 		log.Printf("Unknown donation provider %v. Donations disabled.", os.Getenv("DONATION_PROVIDER"))
 	}
+
+	featuredChannelsKey = os.Getenv("FEATURED_CHANNELS_KEY")
 
 }

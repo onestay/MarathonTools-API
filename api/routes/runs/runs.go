@@ -39,7 +39,7 @@ func (rc RunController) registerRoutes(r *httprouter.Router) {
 }
 
 // NewRunController returns a new run controller
-func NewRunController(b *common.Controller, router *httprouter.Router)  {
+func NewRunController(b *common.Controller, router *httprouter.Router) {
 	r := RunController{
 		base: b,
 	}
@@ -251,8 +251,9 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	rc.base.UpdateActiveRuns()
-
-	go rc.checkForUpdate()
+	if rc.base.CL.CheckDone() {
+		go rc.checkForUpdate()
+	}
 	go rc.base.CL.ResetChecklist()
 
 	w.WriteHeader(http.StatusNoContent)
@@ -311,11 +312,15 @@ func (rc *RunController) checkForUpdate() {
 			if err == redis.Nil {
 				return
 			}
-			rc.base.LogError("error while getting settings from twitch", err, true)
+			rc.base.LogError("error while getting settings from twitter", err, true)
 			return
 		}
 		if b, err := strconv.ParseBool(string(res)); err == nil && b {
 			rc.base.SocialUpdatesChan <- 2
 		}
+	}()
+
+	go func ()  {
+		rc.base.SocialUpdatesChan <- 0x50
 	}()
 }
