@@ -37,6 +37,7 @@ var (
 	marathonSlug                                 string
 	gdqURL, gdqEventID, gdqUsername, gdqPassword string
 	mgoURL, redisURL                             string
+	socialAuthURL, socialAuthKey                 string
 )
 
 type Server struct {
@@ -65,7 +66,7 @@ func startHTTPServer() {
 	log.Println("Initializing base controller...")
 	baseController := common.NewController(hub, mgs, 0, redisClient)
 	log.Println("Initializing social controller...")
-	social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, baseController, r)
+	social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, socialAuthURL, socialAuthKey, baseController, r)
 	log.Println("Initializing time controller...")
 	timer.NewTimeController(baseController, refreshInterval, r)
 	log.Println("Initializing run controller")
@@ -166,6 +167,8 @@ func parseEnvVars() {
 	twitterKey = os.Getenv("TWITTER_KEY")
 	twitterSecret = os.Getenv("TWITTER_SECRET")
 	twitterCallback = os.Getenv("TWITTER_CALLBACK")
+	socialAuthURL = os.Getenv("SOCIAL_AUTH_URL")
+	socialAuthKey = os.Getenv("SOCIAL_AUTH_KEY")
 	i, err := strconv.Atoi(os.Getenv("REFRESH_INTERVAL"))
 	if err != nil && len(os.Getenv("REFRESH_INTERVAL")) != 0 {
 		log.Println("Error parsing REFRESH_INTERVAL defaulting to 100ms")

@@ -1,62 +1,35 @@
 package social
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/go-redis/redis"
 
-	"github.com/dghubble/oauth1"
-
 	"github.com/julienschmidt/httprouter"
 )
 
-// TwitterOAuthURL will give the twitter oauth url
-func (sc Controller) TwitterOAuthURL(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	requestToken, _, _ := sc.twitterInfo.RequestToken()
-	authorizationURL, _ := sc.twitterInfo.AuthorizationURL(requestToken)
-
-	sc.base.Response(authorizationURL.String(), "", 200, w)
-}
-
-// TwitterCallback generates a new twitter accessToken and accessSecret
-func (sc Controller) TwitterCallback(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	requestToken, verifier, _ := oauth1.ParseAuthorizationCallback(r)
-
-	accessToken, accessSecret, _ := sc.twitterInfo.AccessToken(requestToken, "", verifier)
-
-	token := oauth1.NewToken(accessToken, accessSecret)
-
-	b, _ := json.Marshal(token)
-
-	err := sc.base.RedisClient.Set("twitterAuth", b, 0).Err()
-	if err != nil {
-		log.Printf("Error in setting auth info, err: %v", err)
-		sc.base.Response("", "error", 500, w)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// TwitterCheckForAuth will check if the user is authenticated. It actually just checks if the twitterAuth exists it can be wrong tho idk
+// TwitterCheckForAuth will query socialAuth service is twitch authentication data exists. A true here doesn't necessairly mean that the data is valid but only that it exists
 func (sc Controller) TwitterCheckForAuth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	_, err := sc.base.RedisClient.Get("twitterAuth").Result()
-	if err == redis.Nil {
-		sc.base.Response("false", "", 200, w)
+	avail, err := sc.checkSocialAuth()
+	if err != nil {
+		sc.base.LogError("while checking for social auth avail", err, true)
 		return
 	}
 
-	sc.base.Response("true", "", 200, w)
+	if avail.Twitter {
+		sc.base.Response("true", "", 200, w)
+	} else {
+		sc.base.Response(sc.socialAuth.url, "", 200, w)
+	}
 }
 
-// TwitterDeleteToken will delete a twitter token from redis
+// TwitterDeleteToken will tell socialAuth to delete the twitter auth data
 func (sc Controller) TwitterDeleteToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	sc.base.RedisClient.Del("twitterAuth")
+	// TODO: when implemented at social auth make this work
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -71,33 +44,37 @@ func (sc Controller) TwitterSendUpdate(w http.ResponseWriter, r *http.Request, _
 }
 
 func (sc Controller) twitterSendUpdate() error {
-	res, err := sc.base.RedisClient.Get("twitterAuth").Bytes()
-	if err != nil {
-		sc.base.LogError("Error getting twitter auth from redis", err, true)
-	}
-
-	t := oauth1.Token{}
-
-	json.Unmarshal(res, &t)
-
-	c := sc.twitterInfo.Client(oauth1.NoContext, &t)
-	uri, err := url.Parse("https://api.twitter.com/1.1/statuses/update.json")
-
 	ts, err := sc.twitterExecuteTemplate()
 	if err != nil {
 		return err
 	}
 
-	v := url.Values{}
-	v.Add("status", ts)
-	uri.RawQuery = v.Encode()
-	httpRes, err := c.Post(uri.String(), "", nil)
-	if err != nil {
-		sc.base.LogError("Error sending tweet", err, true)
+	tweetBody := struct {
+		Body string `json:"body,omitempty"`
+	}{
+		Body: ts,
 	}
-	fmt.Println(ts)
-	if httpRes.StatusCode != 200 {
-		return fmt.Errorf("Non 200 status code returned from twitter. Status code is %v", httpRes.StatusCode)
+
+	url := sc.socialAuth.url + "/api/v1/tweet"
+	b, err := json.Marshal(&tweetBody)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", sc.socialAuth.key)
+
+	res, err := sc.base.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != 204 {
+		return fmt.Errorf("non 200 status code returned from twitter. Status code is %v", res.StatusCode)
 	}
 
 	return nil

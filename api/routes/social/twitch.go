@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"text/template"
 	"time"
 
@@ -22,17 +23,12 @@ import (
 
 // TwitchResponse is the response returned from the twitch servers for a access token
 type TwitchResponse struct {
-	AccessToken  string `json:"access_token" bson:"accessToken"`
-	RefreshToken string `json:"refresh_token" bson:"refreshToken"`
-	ExpiresIn    int    `json:"expires_in" bson:"expiresIn"`
-	Scope        string `json:"scope" bson:"scope"`
+	AccessToken  string   `json:"access_token" bson:"accessToken"`
+	RefreshToken string   `json:"refresh_token" bson:"refreshToken"`
+	ExpiresIn    int      `json:"expires_in" bson:"expiresIn"`
+	Scope        []string `json:"scope" bson:"scope"`
 	InsertDate   time.Time
 	ChannelID    string
-}
-
-type channelError struct {
-	Error        bool
-	ErrorMessage string
 }
 
 type twitchTitleOptions struct {
@@ -43,212 +39,62 @@ type twitchTitleOptions struct {
 	Category string
 }
 
-// this will mostly use the old twitch api since most of the endpoints I need aren't available in the new one
-// I will try to use the new one as much as possible tho
-const (
-	authorizeURL        = "https://api.twitch.tv/kraken/oauth2/authorize"
-	tokenURL            = "https://api.twitch.tv/kraken/oauth2/token"
-	revokeURL           = "https://api.twitch.tv/kraken/oauth2/revoke"
-	channelURL          = "https://api.twitch.tv/kraken/channel"
-	updateChannelURL    = "https://api.twitch.tv/kraken/channels"
-	getStreamURL        = "https://api.twitch.tv/helix/streams"
-	refreshTokenURL     = "https://id.twitch.tv/oauth2/token"
-	playCommercialURL   = "https://api.twitch.tv/kraken/channels"
-	getChannelByNameURL = "https://api.twitch.tv/helix/users"
-)
-
-func (sc Controller) getChannelID(res chan bool, t *TwitchResponse) {
-	client := http.Client{}
-
-	if len(sc.base.Settings.S.TwitchUpdateChannel) == 0 {
-		req, err := http.NewRequest("GET", channelURL, nil)
-		if err != nil {
-			log.Println("Error creating request to get Channel ID")
-		}
-
-		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-		req.Header.Add("Authorization", "OAuth "+t.AccessToken)
-		req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
-
-		var resp *http.Response
-
-		resp, err = client.Do(req)
-		if err != nil {
-			log.Printf("Error doing request. Err: %v", err)
-		}
-
-		if resp.StatusCode == 400 {
-			token, err := sc.twitchRefreshToken()
-			if err != nil {
-				sc.base.LogError("while trying to get refresh token", err, true)
-				return
-			}
-			req, err := http.NewRequest("GET", channelURL, nil)
-			if err != nil {
-				log.Println("Error creating request to get Channel ID")
-			}
-
-			req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-			req.Header.Add("Authorization", "OAuth "+token)
-			req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
-
-			var resp *http.Response
-
-			resp, err = client.Do(req)
-			if err != nil {
-				log.Printf("Error doing request. Err: %v", err)
-			}
-
-			if resp.StatusCode == 400 {
-				sc.base.LogError("couldn't get channel id even after successfull refresh token refresh. Bad auth", err, true)
-				return
-			}
-		}
-
-		id := struct {
-			ID string `json:"_id"`
-		}{}
-
-		json.NewDecoder(resp.Body).Decode(&id)
-
-		t.ChannelID = id.ID
-
-		res <- true
-	} else {
-		req, err := http.NewRequest("GET", getChannelByNameURL+"?login="+sc.base.Settings.S.TwitchUpdateChannel, nil)
-		if err != nil {
-			log.Println("Error creating request to get channel id with different name")
-		}
-
-		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-
-		resp, err := client.Do(req)
-
-		if resp.StatusCode != 200 {
-			log.Println("non 200 status code while trying to get twitch channel id")
-		}
-
-		id := struct {
-			Data []struct {
-				ID string `json:"id"`
-			} `json:"data"`
-		}{}
-
-		json.NewDecoder(resp.Body).Decode(&id)
-
-		defer resp.Body.Close()
-		if len(id.Data) == 0 {
-			log.Println("couldn't find channel with name ", sc.base.Settings.S.TwitchUpdateChannel)
-			return
-		}
-		t.ChannelID = id.Data[0].ID
-
-		res <- true
-	}
-
-}
-
 func (sc Controller) twitchUpdateInfo() error {
 	client := http.Client{}
-
-	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
-	if err != nil {
-		if err == redis.Nil {
-			return errors.New("twitch updates enabled but no login data saved")
-		}
-		return err
-	}
-	t := TwitchResponse{}
-
-	json.Unmarshal(b, &t)
 
 	title := sc.twitchExecuteTemplate()
 	game := sc.base.CurrentRun.GameInfo.GameName
 
-	uri, err := url.Parse(updateChannelURL + "/" + t.ChannelID)
+	uri, err := url.Parse(sc.socialAuth.url + "/api/v1/twitch/update")
 	if err != nil {
 		return err
 	}
 
-	type channel struct {
-		Game   string `json:"game,omitempty"`
-		Status string `json:"status,omitempty"`
+	type Body struct {
+		Game  string `json:"game"`
+		Title string `json:"title"`
+		Login string `json:"login"`
 	}
-
-	type Payload struct {
-		Channel channel `json:"channel,omitempty"`
-	}
-
-	var ch channel
 
 	ts, err := sc.twitchGetSettings()
 	if err != nil {
 		return err
 	}
 
-	if ts.GameUpdate && ts.TitleUpdate {
-		ch = channel{
-			Status: title,
-			Game:   game,
-		}
-	} else if ts.GameUpdate && !ts.TitleUpdate {
-		ch = channel{
-			Game: game,
-		}
-	} else if ts.TitleUpdate && !ts.GameUpdate {
-		ch = channel{
-			Status: title,
-		}
-	} else {
-		// in that case neither run nor title update are enabled.
+	if !ts.Update {
+		log.Println("twitchUpdateInfo called but twitch updates disabled in settings")
 		return nil
 	}
-	payload := Payload{ch}
+	body := Body{
+		Game:  game,
+		Title: title,
+		Login: sc.base.Settings.S.TwitchUpdateChannel,
+	}
 
-	result, err := json.Marshal(payload)
+	result, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("PUT", uri.String(), bytes.NewReader(result))
+	req, err := http.NewRequest("POST", uri.String(), bytes.NewReader(result))
 	if err != nil {
 		return err
 	}
 
-	req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
-	req.Header.Add("Authorization", "OAuth "+t.AccessToken)
-	req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", sc.socialAuth.key)
 
 	res, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 
-	if res.StatusCode != 200 {
-		token, err := sc.twitchRefreshToken()
+	if res.StatusCode != 204 {
+		errRes := SocialAuthErrorResponse{}
+		err = json.NewDecoder(res.Body).Decode(&errRes)
 		if err != nil {
-			return fmt.Errorf("error while trying to get refresh token: %v", err)
+			return fmt.Errorf("error decoding error body into SocialAuthErrorResponse")
 		}
-
-		req, err := http.NewRequest("PUT", uri.String(), bytes.NewReader(result))
-		if err != nil {
-			return err
-		}
-
-		req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
-		req.Header.Add("Authorization", "OAuth "+token)
-		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-		req.Header.Add("Content-Type", "application/json")
-
-		res, err := client.Do(req)
-		if err != nil {
-			return err
-		}
-
-		if res.StatusCode != 200 {
-			return fmt.Errorf("couldn't update info even afer getting refreshtoken. Status code is %v", res.StatusCode)
-		}
+		return fmt.Errorf("non 204 status code returned from social auth. got: %v (%v) message: %v", errRes.Status, errRes.Error, errRes.Message);
 	}
 
 	return nil
@@ -297,7 +143,11 @@ func (sc Controller) twitchExecuteTemplate() string {
 
 	json.Unmarshal(res, &ts)
 
+	// TODO: handle error
 	tmpl, err := template.New("run").Parse(ts.TemplateString)
+	if err != nil {
+		return err.Error()
+	}
 
 	var execTemplate bytes.Buffer
 	err = tmpl.Execute(&execTemplate, c)
@@ -311,8 +161,7 @@ func (sc Controller) twitchExecuteTemplate() string {
 
 // TwitchSettings defines the settings for twitch integration
 type TwitchSettings struct {
-	TitleUpdate    bool   `json:"titleUpdate"`
-	GameUpdate     bool   `json:"gameUpdate"`
+	Update         bool   `json:"update"`
 	Viewers        bool   `json:"viewers"`
 	TemplateString string `json:"templateString"`
 }
@@ -332,13 +181,6 @@ func (sc Controller) TwitchSetSettings(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	go func() {
-		if ts.Viewers {
-			sc.twitchStartViewerUpdates()
-		} else {
-			sc.twitchStopViewerUpdates()
-		}
-	}()
 	sc.base.RedisClient.Set("twitchSettings", ser, 0)
 
 	w.Header().Add("Content-Type", "application/json")
@@ -380,94 +222,7 @@ func (sc Controller) twitchGetSettings() (*TwitchSettings, error) {
 	return &ts, nil
 }
 
-var viewerUpdateTicker *time.Ticker
-
-func (sc Controller) twitchStartViewerUpdates() {
-	viewerUpdateTicker = time.NewTicker(1 * time.Minute)
-
-	data := struct {
-		DataType string `json:"dataType"`
-		Viewers  int    `json:"viewers"`
-	}{"twitchViewerUpdate", sc.getTwitchViewers()}
-
-	d, _ := json.Marshal(data)
-
-	sc.base.WS.Broadcast <- d
-
-	go func() {
-		for {
-			select {
-			case <-viewerUpdateTicker.C:
-				data := struct {
-					DataType string `json:"dataType"`
-					Viewers  int    `json:"viewers"`
-				}{"twitchViewerUpdate", sc.getTwitchViewers()}
-
-				d, _ := json.Marshal(data)
-
-				sc.base.WS.Broadcast <- d
-			}
-		}
-	}()
-}
-
-func (sc Controller) twitchStopViewerUpdates() {
-	if viewerUpdateTicker != nil {
-		go func() {
-			data := struct {
-				DataType string `json:"dataType"`
-				Viewers  int    `json:"viewers"`
-			}{"twitchViewerUpdate", -1}
-
-			d, _ := json.Marshal(data)
-
-			sc.base.WS.Broadcast <- d
-		}()
-		viewerUpdateTicker.Stop()
-
-		viewerUpdateTicker = nil
-	}
-}
-
-func (sc Controller) getTwitchViewers() int {
-	b, _ := sc.base.RedisClient.Get("twitchAuth").Bytes()
-	t := TwitchResponse{}
-
-	json.Unmarshal(b, &t)
-
-	req, _ := http.NewRequest("GET", getStreamURL+"?user_id="+t.ChannelID, nil)
-	req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-
-	res, _ := sc.base.HTTPClient.Do(req)
-
-	twitchRes := struct {
-		Data []struct {
-			ViewerCount int `json:"viewer_count"`
-		} `json:"data"`
-	}{}
-
-	json.NewDecoder(res.Body).Decode(&twitchRes)
-	if len(twitchRes.Data) != 0 {
-		return twitchRes.Data[0].ViewerCount
-	}
-	return -1
-
-}
-
 func (sc Controller) TwitchPlayCommercial(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	b, err := sc.base.RedisClient.Get("twitchAuth").Bytes()
-	if err != nil {
-		if err == redis.Nil {
-			sc.base.Response("", "no twitch auth saved", http.StatusBadRequest, w)
-			return
-		}
-		sc.base.Response("", "couldn't get twitch auth info", http.StatusInternalServerError, w)
-		return
-	}
-	t := TwitchResponse{}
-
-	json.Unmarshal(b, &t)
-
 	commercialTimes := map[int]bool{30: true, 60: true, 90: true, 120: true, 150: true, 180: true}
 
 	body := struct {
@@ -476,51 +231,52 @@ func (sc Controller) TwitchPlayCommercial(w http.ResponseWriter, r *http.Request
 
 	json.NewDecoder(r.Body).Decode(&body)
 
-	bRes, _ := json.Marshal(body)
-
 	defer r.Body.Close()
 
 	if commercialTimes[body.Length] {
 
-		req, _ := http.NewRequest("POST", playCommercialURL+"/"+t.ChannelID+"/commercial", bytes.NewBuffer(bRes))
+		req, err := http.NewRequest("POST", sc.socialAuth.url+"/twitch/commercial?login="+sc.base.Settings.S.TwitchUpdateChannel+"&length="+strconv.Itoa(body.Length), nil)
+		if err != nil {
+			sc.base.Response("", "error creating run commercial request", 500, w)
+			return
+		}
+		req.Header.Add("Authorization", sc.socialAuth.key)
+		res, err := sc.base.HTTPClient.Do(req)
+		if err != nil {
+			sc.base.Response("", "can't send run commercial request", 500, w)
+			return
 
-		req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
-		req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-		req.Header.Add("Authorization", "OAuth "+t.AccessToken)
-		req.Header.Add("Content-Type", "application/json")
-
-		res, _ := sc.base.HTTPClient.Do(req)
+		}
 
 		if res.StatusCode != 200 {
-			// as documented at https://dev.twitch.tv/docs/v5/reference/channels/#start-channel-commercial
-			if res.StatusCode == 422 {
-				sc.base.Response("", "invalid length or latest commercial less than 8 minutes or channel is not twitch partner", http.StatusUnprocessableEntity, w)
-				return
-			}
-
-			// get refresh access token and redo request
-			token, err := sc.twitchRefreshToken()
-			if err != nil {
-				sc.base.Response("", "error while getting twitch refresh token", http.StatusInternalServerError, w)
-			}
-
-			req, _ := http.NewRequest("POST", playCommercialURL+"/"+t.ChannelID+"/commercial", bytes.NewBuffer(bRes))
-
-			req.Header.Add("Accept", "application/vnd.twitchtv.v5+json")
-			req.Header.Add("Client-ID", sc.twitchInfo.ClientID)
-			req.Header.Add("Authorization", "OAuth "+token)
-			req.Header.Add("Content-Type", "application/json")
-
-			res, _ := sc.base.HTTPClient.Do(req)
-			if res.StatusCode != 200 {
-				sc.base.Response("", "an error occured playing the commercial after getting refresh token. twitch status code is "+res.Status, http.StatusBadRequest, w)
-				return
-
-			}
+			sc.base.Response("", "non 200 status code returned while trying to start commercial", 500, w)
+			return
 		}
+
 		sc.base.Response("ok", "", http.StatusOK, w)
 	} else {
 		sc.base.Response("", "invalid commerical time", http.StatusBadRequest, w)
 	}
 
+}
+
+// TwitchCheckForAuth will check if there is an access token available. It doesn't necessairly say if it's expired or invalid
+func (sc Controller) TwitchCheckForAuth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	avail, err := sc.checkSocialAuth()
+	if err != nil {
+		sc.base.LogError("while checking for social auth avail", err, true)
+		return
+	}
+
+	if avail.Twitch {
+		sc.base.Response("true", "", 200, w)
+	} else {
+		sc.base.Response(sc.socialAuth.url, "", 200, w)
+	}
+}
+
+// TwitchDeleteToken will delete and revoke the twitch token
+func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// TODO: implement this once functionality available in social_auth
+	w.WriteHeader(http.StatusNoContent)
 }

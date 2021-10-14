@@ -299,7 +299,7 @@ func (rc *RunController) checkForUpdate() {
 
 		json.Unmarshal(res, &ts)
 
-		if ts.TitleUpdate || ts.GameUpdate {
+		if ts.Update {
 			rc.base.SocialUpdatesChan <- 1
 		}
 
@@ -314,7 +314,7 @@ func (rc *RunController) checkForUpdate() {
 			rc.base.LogError("error while getting settings from twitch", err, true)
 			return
 		}
-		if b, err := strconv.ParseBool(string(res)); err == nil && b == true {
+		if b, err := strconv.ParseBool(string(res)); err == nil && b {
 			rc.base.SocialUpdatesChan <- 2
 		}
 	}()
