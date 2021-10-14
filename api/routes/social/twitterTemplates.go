@@ -93,9 +93,9 @@ func (sc Controller) TwitterGetTemplates(w http.ResponseWriter, r *http.Request,
 func (sc Controller) twitterGetTemplates() (*twitterTemplates, error) {
 	b, err := sc.base.RedisClient.Get("twitterTemplates").Bytes()
 	if err == redis.Nil {
-		return nil, errors.New("No templates added")
+		return nil, errors.New("no templates added")
 	} else if err != nil {
-		return nil, errors.New("Error getting templates from redis")
+		return nil, errors.New("error getting templates from redis")
 	}
 
 	t := twitterTemplates{}
@@ -151,6 +151,9 @@ func (sc Controller) twitterExecuteTemplate() (string, error) {
 	rTemplate := (*templates)[rand.Intn(len(*templates))]
 
 	templ, err := template.New("tweet").Parse(rTemplate.Text)
+	if err != nil {
+		return "", err
+	}
 
 	var execTemplate bytes.Buffer
 	err = templ.Execute(&execTemplate, t)
