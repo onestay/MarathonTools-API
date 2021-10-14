@@ -319,4 +319,8 @@ func (rc *RunController) checkForUpdate() {
 			rc.base.SocialUpdatesChan <- 2
 		}
 	}()
+
+	go func ()  {
+		rc.base.SocialUpdatesChan <- 0x50
+	}()
 }
