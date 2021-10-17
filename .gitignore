@@ -7,3 +7,4 @@ __debug_bin
 social_auth/target
 social_auth/twitch_auth.json
 social_auth/twitter_auth.json
+.env
