@@ -85,16 +85,16 @@ type GDQDonationProvider struct {
 func NewGDQDonationProvider(t, e, username, password string) (*GDQDonationProvider, error) {
 	res, err := http.Get(t + "/event/" + e + "?json")
 	if err != nil {
-		return nil, errors.New("Couldn't find tracker")
+		return nil, errors.New("couldn't find tracker")
 	}
 
 	if res.StatusCode != 200 {
-		return nil, errors.New("Couldn't find specified event")
+		return nil, errors.New("couldn't find specified event")
 	}
 
-	res, err = http.Get(t + "admin/login")
+	_, err = http.Get(t + "/admin/login")
 	if err != nil {
-		return nil, errors.New("Couldn't find login page")
+		return nil, errors.New("couldn't find login page")
 	}
 
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
@@ -111,7 +111,7 @@ func NewGDQDonationProvider(t, e, username, password string) (*GDQDonationProvid
 		eventID:    e,
 		username:   username,
 		password:   password,
-		loginURL:   t + "admin/login/",
+		loginURL:   t + "/admin/login/",
 		statsURL:   t + e + "?json",
 		apiURL:     t + "/search?event=" + e,
 		client:     client,
