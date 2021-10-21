@@ -142,7 +142,10 @@ func (d *DonationController) StartTotalUpdate(w http.ResponseWriter, r *http.Req
 	go func() {
 		for {
 			<-d.t.C
-			t, _ := d.d.GetTotalAmount()
+			t, err := d.d.GetTotalAmount()
+			if err != nil {
+				d.base.LogError("while getting donation total", err, false)
+			}
 			d.base.WSDonationUpdate(d.donationTotal, t)
 			d.donationTotal = t
 		}

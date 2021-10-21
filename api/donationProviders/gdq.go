@@ -67,10 +67,10 @@ type gdqSearch struct {
 	} `json:"count"`
 	Agg struct {
 		Count  int     `json:"count"`
-		Max    string  `json:"max"`
-		Amount string  `json:"amount"`
+		Max    float64 `json:"max"`
+		Amount float64 `json:"amount"`
 		Avg    float64 `json:"avg"`
-		Target string  `json:"target"`
+		Target float64 `json:"target"`
 	} `json:"agg"`
 }
 
@@ -190,12 +190,7 @@ func (gdq *GDQDonationProvider) GetTotalAmount() (float64, error) {
 	if search == nil {
 		return -1, errors.New("empty donation struct")
 	}
-	amount, err := strconv.ParseFloat(search.Agg.Amount, 64)
-	if err != nil {
-		return -1, err
-	}
-
-	return amount, nil
+	return search.Agg.Amount, nil
 }
 
 // GetTotalDonations will return the amount of donations
