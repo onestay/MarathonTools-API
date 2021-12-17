@@ -19,7 +19,7 @@ type Controller struct {
 	lastPaused      time.Time
 }
 
-func (c *Controller) registerRoutes(r *httprouter.Router)  {
+func (c *Controller) registerRoutes(r *httprouter.Router) {
 	r.POST("/timer/start", c.TimerStart)
 	r.POST("/timer/pause", c.TimerPause)
 	r.POST("/timer/resume", c.TimerResume)
@@ -57,7 +57,7 @@ func (c *Controller) timerLoop() {
 
 // TimerStart will start the timer
 // req state: stopped
-func (c *Controller) TimerStart(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (c *Controller) TimerStart(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if c.invalidState("start", w) {
 		return
 	}
@@ -78,7 +78,7 @@ func (c *Controller) TimerStart(w http.ResponseWriter, r *http.Request, _ httpro
 
 // TimerPause will pause the timer
 // req state: running
-func (c *Controller) TimerPause(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (c *Controller) TimerPause(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if c.invalidState("pause", w) {
 		return
 	}
@@ -94,7 +94,7 @@ func (c *Controller) TimerPause(w http.ResponseWriter, r *http.Request, _ httpro
 
 // TimerResume will resume the timer
 // req state: finished, pause
-func (c *Controller) TimerResume(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (c *Controller) TimerResume(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if c.invalidState("resume", w) {
 		return
 	}
@@ -123,7 +123,7 @@ func (c *Controller) TimerResume(w http.ResponseWriter, r *http.Request, _ httpr
 
 // TimerFinish will be fired when all players are done, can also be manually called
 // req state: running
-func (c *Controller) TimerFinish(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (c *Controller) TimerFinish(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if c.invalidState("finish", w) {
 		return
 	}
@@ -147,7 +147,7 @@ func (c *Controller) TimerFinish(w http.ResponseWriter, r *http.Request, _ httpr
 
 // TimerReset will reset the timer
 // req state: finished
-func (c *Controller) TimerReset(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (c *Controller) TimerReset(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if c.invalidState("reset", w) {
 		return
 	}

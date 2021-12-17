@@ -139,7 +139,7 @@ func (gdq *GDQDonationProvider) login() error {
 	log.Println("Logging into GDQ tracker...")
 	res, err := gdq.client.Get(gdq.loginURL)
 	if err != nil {
-		return errors.New("Couldn't find login page")
+		return errors.New("couldn't find login page")
 	}
 
 	defer res.Body.Close()
@@ -226,7 +226,7 @@ func (gdq *GDQDonationProvider) GetDonations() ([]donations.Donation, error) {
 	}
 
 	if res.StatusCode != 200 {
-		return nil, errors.New("Non 200 status code")
+		return nil, errors.New("non 200 status code")
 	}
 
 	defer res.Body.Close()

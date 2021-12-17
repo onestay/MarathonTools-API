@@ -48,7 +48,7 @@ func NewRunController(b *common.Controller, router *httprouter.Router) {
 }
 
 // RefreshLayout will send a WsCurrentUpdate to refresh the layout
-func (rc RunController) RefreshLayout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (rc RunController) RefreshLayout(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	rc.base.WSCurrentUpdate()
 }
 
@@ -72,8 +72,8 @@ func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprou
 }
 
 // GetRuns will return all runs from the mgo collection
-func (rc RunController) GetRuns(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	runs := []models.Run{}
+func (rc RunController) GetRuns(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+	var runs []models.Run
 
 	err := rc.base.MGS.DB("marathon").C("runs").Find(nil).All(&runs)
 	if err != nil {
@@ -87,7 +87,7 @@ func (rc RunController) GetRuns(w http.ResponseWriter, r *http.Request, _ httpro
 }
 
 // GetRun will return a run
-func (rc RunController) GetRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rc RunController) GetRun(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	if !bson.IsObjectIdHex(runID) {
 		rc.base.Response("", "invalid bson id", http.StatusBadRequest, w)
@@ -110,7 +110,7 @@ func (rc RunController) GetRun(w http.ResponseWriter, r *http.Request, ps httpro
 	json.NewEncoder(w).Encode(run)
 }
 
-func (rc RunController) ActiveRuns(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (rc RunController) ActiveRuns(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	runs := make([]models.Run, 3)
 
 	runs[0] = *rc.base.PrevRun
@@ -123,7 +123,7 @@ func (rc RunController) ActiveRuns(w http.ResponseWriter, r *http.Request, _ htt
 }
 
 // DeleteRun will delete a run with the provided id
-func (rc RunController) DeleteRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rc RunController) DeleteRun(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	if !bson.IsObjectIdHex(runID) {
 		rc.base.Response("", "invalid bson id", http.StatusBadRequest, w)
@@ -177,10 +177,10 @@ func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps htt
 }
 
 // MoveRun takes the run by id and moves it after the run provided by after
-// to do this we have to pull every run from the collection, than delete every run in the db
+// to do this we have to pull every run from the collection, then delete every run in the db
 // do the moving and insert all the records into the db again
-// which is kinda retarded tbh
-func (rc RunController) MoveRun(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+// which is kinda stupid tbh
+func (rc RunController) MoveRun(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
 	runID := ps.ByName("id")
 	after := ps.ByName("after")
 	if !bson.IsObjectIdHex(runID) || !bson.IsObjectIdHex(after) {
@@ -188,7 +188,7 @@ func (rc RunController) MoveRun(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	runs := []models.Run{}
+	var runs []models.Run
 
 	err := rc.base.MGS.DB("marathon").C("runs").Find(nil).All(&runs)
 	if err != nil {
@@ -263,7 +263,7 @@ func (rc *RunController) SwitchRun(w http.ResponseWriter, r *http.Request, _ htt
 
 // UploadRunJSON will take a json and import the runs
 func (rc *RunController) UploadRunJSON(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	runs := []models.Run{}
+	var runs []models.Run
 
 	err := json.NewDecoder(r.Body).Decode(&runs)
 	if err != nil {
@@ -320,7 +320,7 @@ func (rc *RunController) checkForUpdate() {
 		}
 	}()
 
-	go func ()  {
+	go func() {
 		rc.base.SocialUpdatesChan <- 0x50
 	}()
 }

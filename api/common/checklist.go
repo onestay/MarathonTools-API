@@ -15,7 +15,7 @@ type item struct {
 	Done bool   `json:"done"`
 }
 
-// Checklist provides the implamentation of a checklist
+// Checklist provides the implementation of a checklist
 type Checklist struct {
 	Items []*item
 	// we need to access this at some crucial times like timer start. we can't afford the time it takes for the loop to finish processing then
@@ -24,11 +24,11 @@ type Checklist struct {
 	b        *Controller
 }
 
-// NewChecklist initizalies and returns a new Checklist
+// NewChecklist initializes and returns a new Checklist
 func NewChecklist(b *Controller) *Checklist {
 	log.Println("Initializing checklist...")
 	var items []*item
-	// // a checklist can be initalized in three ways
+	// // a checklist can be initialized in three ways
 	// // 1: through a checklist file
 	// // 2: through a checklist saved in redis
 	// // 3: a new checklist
@@ -153,7 +153,7 @@ func (c *Checklist) ResetChecklist() {
 }
 
 // CheckDoneHTTP will return whether all the items in the checklist are done
-func (c *Checklist) CheckDoneHTTP(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (c *Checklist) CheckDoneHTTP(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	res := struct {
 		Ok   bool `json:"ok"`
 		Data bool `json:"data"`
@@ -172,8 +172,8 @@ func (c *Checklist) CheckDone() bool {
 	return true
 }
 
-//GetChecklist will get all items from the checlist
-func (c *Checklist) GetChecklist(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+//GetChecklist will get all items from the checklist
+func (c *Checklist) GetChecklist(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(c.Items)
 }
 

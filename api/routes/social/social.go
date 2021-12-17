@@ -64,7 +64,7 @@ type socialAuthInfo struct {
 	key string
 }
 
-type SocialAuthErrorResponse struct {
+type AuthErrorResponse struct {
 	Status  int    `json:"status,omitempty"`
 	Error   string `json:"error,omitempty"`
 	Message string `json:"message,omitempty"`
@@ -117,12 +117,12 @@ func NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twi
 		featuredChannelsKey: featuredChannelsKey,
 	}
 
-	go c.comReciever()
+	go c.comReceiver()
 
 	c.registerRoutes(router)
 }
 
-func (sc Controller) comReciever() {
+func (sc Controller) comReceiver() {
 	for {
 		i := <-sc.base.SocialUpdatesChan
 		if i == 1 {

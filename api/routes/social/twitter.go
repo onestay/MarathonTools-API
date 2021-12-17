@@ -13,7 +13,7 @@ import (
 )
 
 // TwitterCheckForAuth will query socialAuth service is twitch authentication data exists. A true here doesn't necessairly mean that the data is valid but only that it exists
-func (sc Controller) TwitterCheckForAuth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitterCheckForAuth(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	avail, err := sc.checkSocialAuth()
 	if err != nil {
 		sc.base.LogError("while checking for social auth avail", err, true)
@@ -28,13 +28,13 @@ func (sc Controller) TwitterCheckForAuth(w http.ResponseWriter, r *http.Request,
 }
 
 // TwitterDeleteToken will tell socialAuth to delete the twitter auth data
-func (sc Controller) TwitterDeleteToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitterDeleteToken(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	// TODO: when implemented at social auth make this work
 	w.WriteHeader(http.StatusNoContent)
 }
 
 // TwitterSendUpdate will send the update tweet at the start of a new run
-func (sc Controller) TwitterSendUpdate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitterSendUpdate(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	err := sc.twitterSendUpdate()
 	if err != nil {
 		sc.base.Response("", "error sending tweet", http.StatusInternalServerError, w)
@@ -99,7 +99,7 @@ func (sc Controller) TwitterSetSettings(w http.ResponseWriter, r *http.Request, 
 }
 
 // TwitterGetSettings is used to get settings for twitter
-func (sc Controller) TwitterGetSettings(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitterGetSettings(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	res, err := sc.base.RedisClient.Get("twitterSettings").Bytes()
 	if err != nil {
 		if err == redis.Nil {

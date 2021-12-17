@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-redis/redis"
-	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2"
 
 	"github.com/onestay/MarathonTools-API/api/models"
 	"github.com/onestay/MarathonTools-API/ws"
@@ -24,7 +24,7 @@ type Controller struct {
 	TimerState  TimerState
 	TimerTime   float64
 	HTTPClient  http.Client
-	// SocialUpdatesChan is used to communicate with the socialController on twitter and twitch updates
+	// SocialUpdatesChan is used to communicate with the socialController on Twitter and twitch updates
 	SocialUpdatesChan chan int
 	CL                *Checklist
 	Settings          *SettingsProvider
@@ -36,7 +36,7 @@ type httpResponse struct {
 	Err  string `json:"error,omitempty"`
 }
 
-// The reason why all the timer stuff is here is to make it accesible to all other controllers which
+// The reason why all the timer stuff is here is to make it accessible to all other controllers which
 // may need access to timer states and constants
 // Especially the base controller, because it couldn't import the timerState from the timer class
 
@@ -56,8 +56,11 @@ const (
 
 // NewController returns a new base controller
 func NewController(hub *ws.Hub, mgs *mgo.Session, crIndex int, rc *redis.Client) *Controller {
-	runs := []models.Run{}
-	mgs.DB("marathon").C("runs").Find(nil).All(&runs)
+	var runs []models.Run
+	err := mgs.DB("marathon").C("runs").Find(nil).All(&runs)
+	if err != nil {
+		return nil
+	}
 	c := &Controller{
 		WS:                hub,
 		MGS:               mgs,

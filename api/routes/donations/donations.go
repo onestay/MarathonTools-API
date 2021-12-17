@@ -11,7 +11,7 @@ import (
 	"github.com/onestay/MarathonTools-API/api/common"
 )
 
-// DonationProvider is the interface that has to be satisfied for something to work as an donation provider
+// DonationProvider is the interface that has to be satisfied for something to work as a donation provider
 type DonationProvider interface {
 	// GetTotalAmount should return the total donation amount as a float64. It shouldn't be returned as cents
 	GetTotalAmount() (float64, error)
@@ -22,7 +22,7 @@ type DonationProvider interface {
 }
 
 // Donation represents a single donation
-// Non initialized fields will not be send to the client
+// Non initialized fields will not be sent to the client
 type Donation struct {
 	Amount  float64   `json:"amount,omitempty"`
 	Message string    `json:"message,omitempty"`
@@ -40,7 +40,7 @@ type DonationController struct {
 	enabled       bool
 }
 
-// NewDonationController takes the base controller and an donation interface and returns a new DonationController
+// NewDonationController takes the base controller and a donation interface and returns a new DonationController
 func NewDonationController(b *common.Controller, d DonationProvider, e bool) *DonationController {
 	dController := &DonationController{
 		base:    b,
@@ -59,7 +59,7 @@ func NewDonationController(b *common.Controller, d DonationProvider, e bool) *Do
 }
 
 // GetTotal will get the total amount of money donated
-func (d *DonationController) GetTotal(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (d *DonationController) GetTotal(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if !d.enabled {
 		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
 		return
@@ -67,7 +67,7 @@ func (d *DonationController) GetTotal(w http.ResponseWriter, r *http.Request, _ 
 
 	amount, err := d.d.GetTotalAmount()
 	if err != nil {
-		d.base.Response("", "An error occured getting total donation amount", 500, w)
+		d.base.Response("", "An error occurred getting total donation amount", 500, w)
 		return
 	}
 
@@ -80,7 +80,7 @@ func (d *DonationController) GetTotal(w http.ResponseWriter, r *http.Request, _ 
 }
 
 // GetAll will return all donations
-func (d *DonationController) GetAll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (d *DonationController) GetAll(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if !d.enabled {
 		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
 		return
@@ -88,7 +88,7 @@ func (d *DonationController) GetAll(w http.ResponseWriter, r *http.Request, _ ht
 
 	donations, err := d.d.GetDonations()
 	if err != nil {
-		d.base.Response("", "An error occured getting donations", 500, w)
+		d.base.Response("", "An error occurred getting donations", 500, w)
 		return
 	}
 
@@ -101,7 +101,7 @@ func (d *DonationController) GetAll(w http.ResponseWriter, r *http.Request, _ ht
 }
 
 // GetTotalDonations will return the number of all donations
-func (d *DonationController) GetTotalDonations(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (d *DonationController) GetTotalDonations(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if !d.enabled {
 		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
 		return
@@ -109,7 +109,7 @@ func (d *DonationController) GetTotalDonations(w http.ResponseWriter, r *http.Re
 
 	amount, err := d.d.GetTotalDonations()
 	if err != nil {
-		d.base.Response("", "An error occured getting donations", 500, w)
+		d.base.Response("", "An error occurred getting donations", 500, w)
 		return
 	}
 
@@ -155,7 +155,7 @@ func (d *DonationController) StartTotalUpdate(w http.ResponseWriter, r *http.Req
 
 }
 
-func (d *DonationController) StopTotalUpdate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (d *DonationController) StopTotalUpdate(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	if !d.enabled {
 		d.base.Response("", "Donations have not been enabled.", http.StatusBadRequest, w)
 		return

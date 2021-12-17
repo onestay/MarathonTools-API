@@ -20,7 +20,7 @@ import (
 	"github.com/onestay/MarathonTools-API/api/common"
 	"github.com/onestay/MarathonTools-API/api/routes/runs"
 	"github.com/onestay/MarathonTools-API/ws"
-	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2"
 )
 
 var (
@@ -151,8 +151,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, PATCH, OPTIONS, HEAD")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	if r.Method == "OPTIONS" {
-		// idk why but because of some reason 504 was the answer to every pre flight request
-		// so this hack has to work
+		// TODO: proper OPTIONS handling
 		w.WriteHeader(200)
 	} else {
 		s.r.ServeHTTP(w, r)

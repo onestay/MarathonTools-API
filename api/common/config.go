@@ -46,7 +46,7 @@ func InitSettings(b *Controller) *SettingsProvider {
 }
 
 // SetSettings is used to set the settings
-func (s *SettingsProvider) SetSettings(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *SettingsProvider) SetSettings(_ http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	newSettings := Settings{}
 
 	json.NewDecoder(r.Body).Decode(&newSettings)
@@ -60,7 +60,7 @@ func (s *SettingsProvider) SetSettings(w http.ResponseWriter, r *http.Request, _
 }
 
 // GetSettings returns all settings
-func (s *SettingsProvider) GetSettings(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *SettingsProvider) GetSettings(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(s.S)
 }
 

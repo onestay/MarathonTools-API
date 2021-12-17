@@ -75,7 +75,7 @@ func (sc Controller) TwitterAddTemplate(w http.ResponseWriter, r *http.Request, 
 }
 
 // TwitterGetTemplates will return all templates from redis
-func (sc Controller) TwitterGetTemplates(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitterGetTemplates(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	t, err := sc.twitterGetTemplates()
 	if err != nil {
 		if err.Error() == "No templates added" {

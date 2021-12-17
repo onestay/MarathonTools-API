@@ -89,19 +89,19 @@ func (sc Controller) twitchUpdateInfo() error {
 	}
 
 	if res.StatusCode != 204 {
-		errRes := SocialAuthErrorResponse{}
+		errRes := AuthErrorResponse{}
 		err = json.NewDecoder(res.Body).Decode(&errRes)
 		if err != nil {
 			return fmt.Errorf("error decoding error body into SocialAuthErrorResponse")
 		}
-		return fmt.Errorf("non 204 status code returned from social auth. got: %v (%v) message: %v", errRes.Status, errRes.Error, errRes.Message);
+		return fmt.Errorf("non 204 status code returned from social auth. got: %v (%v) message: %v", errRes.Status, errRes.Error, errRes.Message)
 	}
 
 	return nil
 }
 
 // TwitchUpdateInfo will update the game and title for the connected twitch account
-func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	err := sc.twitchUpdateInfo()
 	if err != nil {
 		sc.base.Response("", "error sending twitch update", http.StatusInternalServerError, w)
@@ -113,7 +113,7 @@ func (sc Controller) TwitchUpdateInfo(w http.ResponseWriter, r *http.Request, _ 
 }
 
 // TwitchExecuteTemplate will execute the template string given via config
-func (sc Controller) TwitchExecuteTemplate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitchExecuteTemplate(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	res := sc.twitchExecuteTemplate()
 	if res == "NOTEMPLATE" {
 		sc.base.Response("", "NOTEMPLATE", 200, w)
@@ -167,7 +167,7 @@ type TwitchSettings struct {
 }
 
 // TwitchSetSettings sets the settings
-func (sc Controller) TwitchSetSettings(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (sc Controller) TwitchSetSettings(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var ts TwitchSettings
 	err := json.NewDecoder(r.Body).Decode(&ts)
 	if err != nil {
@@ -189,7 +189,7 @@ func (sc Controller) TwitchSetSettings(w http.ResponseWriter, r *http.Request, p
 }
 
 // TwitchGetSettings returns settings
-func (sc Controller) TwitchGetSettings(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (sc Controller) TwitchGetSettings(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	var res []byte
 
 	res, err := sc.base.RedisClient.Get("twitchSettings").Bytes()
@@ -222,7 +222,7 @@ func (sc Controller) twitchGetSettings() (*TwitchSettings, error) {
 	return &ts, nil
 }
 
-func (sc Controller) TwitchPlayCommercial(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (sc Controller) TwitchPlayCommercial(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	commercialTimes := map[int]bool{30: true, 60: true, 90: true, 120: true, 150: true, 180: true}
 
 	body := struct {
@@ -261,7 +261,7 @@ func (sc Controller) TwitchPlayCommercial(w http.ResponseWriter, r *http.Request
 }
 
 // TwitchCheckForAuth will check if there is an access token available. It doesn't necessairly say if it's expired or invalid
-func (sc Controller) TwitchCheckForAuth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitchCheckForAuth(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	avail, err := sc.checkSocialAuth()
 	if err != nil {
 		sc.base.LogError("while checking for social auth avail", err, true)
@@ -276,7 +276,7 @@ func (sc Controller) TwitchCheckForAuth(w http.ResponseWriter, r *http.Request, 
 }
 
 // TwitchDeleteToken will delete and revoke the twitch token
-func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (sc Controller) TwitchDeleteToken(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	// TODO: implement this once functionality available in social_auth
 	w.WriteHeader(http.StatusNoContent)
 }

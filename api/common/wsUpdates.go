@@ -8,7 +8,7 @@ import (
 
 // SendInitialData will send some initial data over the websocket
 func (c Controller) SendInitialData() []byte {
-	runs := []models.Run{}
+	var runs []models.Run
 	c.Col.Find(nil).All(&runs)
 
 	data := struct {
@@ -22,6 +22,7 @@ func (c Controller) SendInitialData() []byte {
 		UpNextRun      models.Run   `json:"upNext"`
 		ChecklistItems []*item      `json:"checklistItems"`
 		Settings       Settings     `json:"settings"`
+		// FIXME spell initial correctly. Need to change on client side too!
 	}{"initalData", runs, *c.PrevRun, *c.CurrentRun, *c.NextRun, c.RunIndex, c.TimerState, *c.UpNext, c.CL.Items, *c.Settings.S}
 
 	d, _ := json.Marshal(data)
@@ -43,7 +44,7 @@ func (c Controller) WSSettingUpdate() {
 
 // WSRunUpdate sends an update for all runs over the websocket and current runs over the websocket.
 func (c Controller) WSRunUpdate() {
-	runs := []models.Run{}
+	var runs []models.Run
 	c.Col.Find(nil).All(&runs)
 
 	data := struct {
@@ -87,7 +88,7 @@ func (c Controller) WSChecklistUpdate() {
 
 // WSRunsOnlyUpdate only updates runs and not current runs
 func (c Controller) WSRunsOnlyUpdate() {
-	runs := []models.Run{}
+	var runs []models.Run
 	c.Col.Find(nil).All(&runs)
 
 	data := struct {

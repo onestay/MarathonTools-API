@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const FEATURED_CHANNELS_URL = "https://api.furious.pro/featuredchannels/bot"
+const FeaturedChannelsUrl = "https://api.furious.pro/featuredchannels/bot"
 
 func (sc Controller) UpdateFeaturedChannels() error {
 	if sc.featuredChannelsKey == "" {
@@ -24,14 +24,14 @@ func (sc Controller) UpdateFeaturedChannels() error {
 		}
 	}
 
-	players_string := strings.Join(players, ",")
+	playersString := strings.Join(players, ",")
 
-	req_url, err := url.Parse(FEATURED_CHANNELS_URL + "/" + sc.featuredChannelsKey + "/" + players_string)
+	reqUrl, err := url.Parse(FeaturedChannelsUrl + "/" + sc.featuredChannelsKey + "/" + playersString)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("GET", req_url.String(), nil)
+	req, err := http.NewRequest("GET", reqUrl.String(), nil)
 	if err != nil {
 		return err
 	}

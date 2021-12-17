@@ -67,7 +67,7 @@ const (
 	baseURL = "https://www.speedrun.com/api/v1/games/"
 )
 
-// SRComDonationProvider satifies the DonationsInterface and can be used as a donation provider
+// SRComDonationProvider satisfies the DonationsInterface and can be used as a donation provider
 type SRComDonationProvider struct {
 	marathonSlug  string
 	marathonID    string
@@ -84,11 +84,11 @@ func NewSRComDonationProvider(ms string) (*SRComDonationProvider, error) {
 	}
 
 	if res.StatusCode == 404 {
-		return nil, errors.New("Couldn't find marathon")
+		return nil, errors.New("couldn't find marathon")
 	}
 
 	if res.StatusCode != 200 {
-		return nil, errors.New("Non 200 status code")
+		return nil, errors.New("non 200 status code")
 	}
 
 	var m srComMarathon
@@ -113,9 +113,9 @@ func NewSRComDonationProvider(ms string) (*SRComDonationProvider, error) {
 	}
 
 	if !donationsEnabled {
-		return nil, errors.New("Donations not enabled for this marathon")
+		return nil, errors.New("donations not enabled for this marathon")
 	}
-	// I think we can assure, that all links are filled out after donationsEbabled has passed
+	// I think we can assure, that all links are filled out after donationsEnabled has passed
 	return &SRComDonationProvider{
 		marathonSlug: ms,
 		marathonID:   m.Data.ID,
