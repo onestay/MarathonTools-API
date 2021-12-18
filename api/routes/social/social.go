@@ -34,6 +34,7 @@ type socialAuthAvailResponse struct {
 }
 
 func (sc Controller) checkSocialAuth() (*socialAuthAvailResponse, error) {
+	// TODO: make this into a setting
 	url := sc.socialAuth.url + "/api/v1/avail"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

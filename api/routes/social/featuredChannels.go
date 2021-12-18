@@ -10,6 +10,7 @@ import (
 const FeaturedChannelsUrl = "https://api.furious.pro/featuredchannels/bot"
 
 func (sc Controller) UpdateFeaturedChannels() error {
+	// TODO: Add a setting for this key
 	if sc.featuredChannelsKey == "" {
 		return nil
 	}
