@@ -13,12 +13,12 @@ const (
 // Run represents a single run
 // TODO: look into making more fields private here
 type Run struct {
-	Id            int64             `json:"runID"`
-	GameInfo      GameInfo          `json:"gameInfo"`
-	RunInfo       RunInfo           `json:"runInfo"`
-	Players       []PlayerInfo      `json:"players"`
-	RunTime       runTime           `json:"runTime"`
-	PlayerRunTime map[int64]runTime `json:"playerRunTime"`
+	Id            int64              `json:"runID"`
+	GameInfo      GameInfo           `json:"gameInfo"`
+	RunInfo       RunInfo            `json:"runInfo"`
+	Players       []*PlayerInfo      `json:"players"`
+	RunTime       runTime            `json:"runTime"`
+	PlayerRunTime map[int64]*runTime `json:"playerRunTime"`
 }
 
 type GameInfo struct {
@@ -37,7 +37,7 @@ type runTime struct {
 	Time     float64 `json:"time"`
 }
 
-func CreateRun(gi GameInfo, ri RunInfo, players []PlayerInfo) Run {
+func CreateRun(gi GameInfo, ri RunInfo, players []*PlayerInfo) Run {
 	var run Run
 
 	run.GameInfo = gi
@@ -46,7 +46,7 @@ func CreateRun(gi GameInfo, ri RunInfo, players []PlayerInfo) Run {
 	run.Id = RunIdNotInit
 
 	run.RunTime = runTime{}
-	run.PlayerRunTime = make(map[int64]runTime, len(players))
+	run.PlayerRunTime = make(map[int64]*runTime, len(players))
 
 	return run
 }
@@ -90,9 +90,50 @@ func AddRun(run Run, db *sql.DB) (int64, error) {
 	return id, nil
 }
 
-//func GetRuns(db *sql.DB) []Run {
-//rows, err := db.Query("SELECT * FROM run_players JOIN runs ON run_players.run_id=runs.id JOIN players ON run_players.player_id=players.id")
-//}
+func GetRuns(db *sql.DB) ([]*Run, error) {
+	rows, err := db.Query("SELECT game_name, release_year, estimate, category, platform, r.finished, r.time, r.id, p.id, display_name, country, twitter_name, twitch_name, youtube_name, run_players.finished, run_players.time FROM run_players INNER JOIN runs r ON r.id=run_players.run_id INNER JOIN players p on p.id = run_players.player_id INNER JOIN schedule s on r.id = s.run_id ORDER BY s.pos")
+	if err != nil {
+		return nil, err
+	}
+	var runs []*Run
+
+	var prevRunId int64 = -1
+	var prevRun *Run = nil
+	for rows.Next() {
+		var gi GameInfo
+		var ri RunInfo
+		var pi PlayerInfo
+		var ti runTime
+		var playerTimeInfo runTime
+		var run Run
+		var runId int64
+		err = rows.Scan(&gi.GameName, &gi.ReleaseYear, &ri.Estimate, &ri.Category, &ri.Platform, &ti.Finished, &ti.Time, &runId, &pi.Id, &pi.DisplayName, &pi.Country, &pi.TwitterName, &pi.TwitchName, &pi.YoutubeName, &playerTimeInfo.Finished, &playerTimeInfo.Time)
+		if err != nil {
+			return nil, err
+		}
+
+		if prevRunId == runId {
+			prevRun.Players = append(prevRun.Players, &pi)
+			prevRun.PlayerRunTime[pi.Id] = &playerTimeInfo
+		} else {
+			run.Id = runId
+			run.GameInfo = gi
+			run.RunInfo = ri
+			run.Players = make([]*PlayerInfo, 1)
+			run.PlayerRunTime = make(map[int64]*runTime)
+			run.PlayerRunTime[pi.Id] = &playerTimeInfo
+			run.Players[0] = &pi
+			run.RunTime = ti
+
+			prevRun = &run
+			prevRunId = runId
+
+			runs = append(runs, &run)
+		}
+	}
+
+	return runs, nil
+}
 
 func insertRunIntoDb(run *Run, db *sql.DB) (int64, error) {
 	stmt, err := db.Prepare("INSERT INTO runs(game_name, release_year, estimate, category, platform, finished, time) VALUES (?, ?, ?, ?, ?, 0, 0)")
@@ -129,13 +170,13 @@ func insertRunPlayerRelation(run *Run, db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare("INSERT INTO run_players (run_id, player_id) VALUES (?, ?)")
+	stmt, err := tx.Prepare("INSERT INTO run_players (run_id, player_id, finished, time) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
 
 	for _, player := range run.Players {
-		_, err := stmt.Exec(run.Id, player.Id)
+		_, err := stmt.Exec(run.Id, player.Id, false, 0)
 		if err != nil {
 			// FIXME: cleanup needed
 			return err
