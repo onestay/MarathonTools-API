@@ -57,7 +57,7 @@ func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprou
 	run := models.Run{}
 	json.NewDecoder(r.Body).Decode(&run)
 
-	run.RunID = bson.NewObjectId()
+	run.id = bson.NewObjectId()
 
 	err := rc.base.MGS.DB("marathon").C("runs").Insert(run)
 	if err != nil {
@@ -65,7 +65,7 @@ func (rc RunController) AddRun(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	rc.base.Response(run.RunID.Hex(), "", http.StatusOK, w)
+	rc.base.Response(run.id.Hex(), "", http.StatusOK, w)
 
 	go rc.base.WSRunsOnlyUpdate()
 	go rc.base.UpdateActiveRuns()
@@ -158,7 +158,7 @@ func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps htt
 		log.Printf("Error in UpdateRun: %v", err)
 		return
 	}
-	updatedRun.RunID = bson.ObjectIdHex(runID)
+	updatedRun.id = bson.ObjectIdHex(runID)
 
 	err = rc.base.MGS.DB("marathon").C("runs").UpdateId(bson.ObjectIdHex(runID), updatedRun)
 	if err != nil {
@@ -169,7 +169,7 @@ func (rc RunController) UpdateRun(w http.ResponseWriter, r *http.Request, ps htt
 	w.WriteHeader(http.StatusNoContent)
 
 	rc.base.WSRunsOnlyUpdate()
-	if updatedRun.RunID == rc.base.CurrentRun.RunID {
+	if updatedRun.id == rc.base.CurrentRun.id {
 		rc.base.CurrentRun = &updatedRun
 		rc.base.WSCurrentUpdate()
 	}
@@ -201,9 +201,9 @@ func (rc RunController) MoveRun(w http.ResponseWriter, _ *http.Request, ps httpr
 	var indexToInsert int
 
 	for i := 0; i < len(runs); i++ {
-		if runs[i].RunID == bson.ObjectIdHex(runID) {
+		if runs[i].id == bson.ObjectIdHex(runID) {
 			index = i
-		} else if runs[i].RunID == bson.ObjectIdHex(after) {
+		} else if runs[i].id == bson.ObjectIdHex(after) {
 			indexToInsert = i
 		}
 	}
@@ -275,7 +275,7 @@ func (rc *RunController) UploadRunJSON(w http.ResponseWriter, r *http.Request, _
 	rc.base.MGS.DB("marathon").C("runs").RemoveAll(nil)
 
 	for _, run := range runs {
-		run.RunID = bson.NewObjectId()
+		run.id = bson.NewObjectId()
 		err := rc.base.MGS.DB("marathon").C("runs").Insert(run)
 		if err != nil {
 			panic("error adding run from UploadRunJSON into db")

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -51,6 +52,7 @@ func init() {
 		log.Println("Error loading .env file.")
 	}
 	parseEnvVars()
+	openDB("./db")
 	log.Printf("Connecting to mgo server at %v", mgoURL)
 	mgs = getMongoSession()
 	log.Printf("Connecting to redis server at %v", redisURL)
@@ -65,7 +67,11 @@ func startHTTPServer() {
 	r := httprouter.New()
 	hub := ws.NewHub()
 	log.Println("Initializing base controller...")
-	baseController := common.NewController(hub, mgs, 0, redisClient)
+	baseController, err := common.NewController(hub, mgs, 0, redisClient)
+	if err != nil {
+		log.Fatalf("Error initializing base controller %v", err)
+
+	}
 	log.Println("Initializing social controller...")
 	social.NewSocialController(twitchClientID, twitchClientSecret, twitchCallback, twitterKey, twitterSecret, twitterCallback, socialAuthURL, socialAuthKey, featuredChannelsKey, baseController, r)
 	log.Println("Initializing time controller...")
@@ -75,19 +81,19 @@ func startHTTPServer() {
 
 	var donProv donations.DonationProvider
 	donationsEnabled := true
-	var err error
+	var donationProviderError error
 
 	if os.Getenv("DONATION_PROVIDER") == "gdq" {
 		log.Println("Creating new GDQ donation provider")
-		donProv, err = donationProviders.NewGDQDonationProvider(gdqURL, gdqEventID, gdqUsername, gdqPassword)
-		if err != nil {
+		donProv, donationProviderError = donationProviders.NewGDQDonationProvider(gdqURL, gdqEventID, gdqUsername, gdqPassword)
+		if donationProviderError != nil {
 			log.Printf("Error during gdq donation provider creation: %v", err)
 			donationsEnabled = false
 		}
 	} else if os.Getenv("DONATION_PROVIDER") == "srcom" {
 		log.Println("Creating new speedrun.com donation provider")
-		donProv, err = donationProviders.NewSRComDonationProvider(marathonSlug)
-		if err != nil {
+		donProv, donationProviderError = donationProviders.NewSRComDonationProvider(marathonSlug)
+		if donationProviderError != nil {
 			log.Printf("Error during donation provider creation: %v", err)
 			donationsEnabled = false
 		}
@@ -134,6 +140,15 @@ func getMongoSession() *mgo.Session {
 	}
 
 	return s
+}
+
+func openDB(path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", "./db/test.db")
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
 
 func getRedisClient() *redis.Client {
